@@ -7,12 +7,10 @@ import {
   Transaction,
   LAMPORTS_PER_SOL,
 } from '@solana/web3.js';
-import { APP_IDENTITY, SOLANA_CLUSTER } from '@/constants/wallet';
+import { APP_IDENTITY, SOLANA_CLUSTER, SOLANA_RPC_ENDPOINT } from '@/constants/wallet';
 import { getStoredWalletAuth, saveWalletAuth } from '@/apis/auth';
 import { reauthorizeWallet } from './wallet';
 
-// Solana RPC endpoint (devnet)
-const SOLANA_RPC_ENDPOINT = 'https://api.devnet.solana.com';
 const COINGECKO_PRICE_API = 'https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd';
 
 export interface SendSolResult {

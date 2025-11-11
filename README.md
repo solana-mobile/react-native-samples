@@ -12,15 +12,17 @@ For feedback and suggestions, please open an issue on this repository.
 | **Todo List** <br><br>[> Browse](/todo-list) | Task management app showcasing list rendering, data persistence, and navigation. <br><br>• Intermediate<br>• AsyncStorage<br>• FlatList optimization |
 | **Settle** <br><br>[> Browse](/settle) | Expenses splitting app showcasing functionality to connect wallet and repay debts with transfer transactions <br><br>• Beginner friendly<br>• Connect wallet<br>• Send and View Transactions|
 
-## 🛠️ Getting Started
+## 🛠️ Prerequisites
 
-Each sample includes its own setup instructions. General requirements:
+Before trying out any of the apps, ensure you have the following:
 
 - Any Android device or emulator (Solana Mobile devices are not necessary!)
 - React Native development environment ([setup guide](https://docs.expo.dev/get-started/set-up-your-environment/?mode=development-build&buildEnv=local))
-- [Mock MWA Wallet](https://docs.solanamobile.com/react-native/test-with-any-android-device#mock-mwa-wallet)
 - Node.js and npm/yarn
 - Android Studio (Recommended)
+- [Mock MWA Wallet](https://docs.solanamobile.com/react-native/test-with-any-android-device#mock-mwa-wallet) - Required for testing wallet connections and transactions similar to how it takes place on Seeker. Follow the setup instructions on their github and test out the wallet authentication prior to proceeding with development.
+
+Each sample includes its own detailed setup instructions.
 
 
 ## 📖 Resources

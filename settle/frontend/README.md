@@ -228,7 +228,12 @@ export const authorizeWallet = async (): Promise<WalletAuthResult> => {
 
 ```typescript
 // constants/wallet.ts
-export const SOLANA_CLUSTER = 'devnet' as const;
+export const SOLANA_CLUSTER = (process.env.EXPO_PUBLIC_SOLANA_CLUSTER || 'devnet') as 'devnet' | 'testnet' | 'mainnet-beta';
+```
+
+Configured via `.env`:
+```bash
+EXPO_PUBLIC_SOLANA_CLUSTER=devnet
 ```
 
 #### 4. **APP_IDENTITY Configuration**
@@ -667,12 +672,23 @@ if (errorMessage.includes('declined') || errorMessage.includes('-1')) {
 
 ### Using Devnet
 
+Configure devnet in your `.env` file:
+
+```bash
+# .env
+EXPO_PUBLIC_SOLANA_CLUSTER=devnet
+EXPO_PUBLIC_SOLANA_RPC_ENDPOINT=https://api.devnet.solana.com
+```
+
+These values are then imported from [constants/wallet.ts](constants/wallet.ts):
+
 ```typescript
 // constants/wallet.ts
-export const SOLANA_CLUSTER = 'devnet' as const;
+export const SOLANA_CLUSTER = (process.env.EXPO_PUBLIC_SOLANA_CLUSTER || 'devnet') as 'devnet' | 'testnet' | 'mainnet-beta';
+export const SOLANA_RPC_ENDPOINT = process.env.EXPO_PUBLIC_SOLANA_RPC_ENDPOINT || 'https://api.devnet.solana.com';
 
 // solana/transaction.ts
-const SOLANA_RPC_ENDPOINT = 'https://api.devnet.solana.com';
+import { SOLANA_RPC_ENDPOINT } from '@/constants/wallet';
 const connection = new Connection(SOLANA_RPC_ENDPOINT, 'confirmed');
 ```
 
@@ -698,34 +714,14 @@ const dummyUsers = [
 
 ### RPC Endpoint Selection
 
-```typescript
-// Free public RPCs (rate limited)
-const SOLANA_RPC_ENDPOINT = 'https://api.devnet.solana.com';
+Configure in your `.env` file:
+
+```bash
+EXPO_PUBLIC_SOLANA_RPC_ENDPOINT=https://api.devnet.solana.com
 ```
 
 ---
 
-## Best Practices Summary
-
-### ✅ DO:
-- Always validate addresses before transactions
-- Convert all addresses to base58 format
-- Wait for transaction confirmation
-- Cache auth tokens for better UX
-- Use devnet for development
-- Provide detailed error messages
-- Test with real wallet apps (Phantom, Solflare)
-
-### ❌ DON'T:
-- Store private keys in your app
-- Use mainnet during development
-- Skip transaction confirmation checks
-- Assume address format (always convert)
-- Use outdated blockhashes
-- Ignore wallet adapter errors
-- Test only with hardcoded addresses
-
----
 
 ## Common Issues & Solutions
 
@@ -812,31 +808,33 @@ The Web3 integration follows a clean separation of concerns:
 
 ### Important Constants
 
-Solana configuration is managed in [constants/wallet.ts](constants/wallet.ts):
+Solana configuration is managed through environment variables and [constants/wallet.ts](constants/wallet.ts):
 
+**Environment Variables** (`.env`):
+```bash
+EXPO_PUBLIC_SOLANA_CLUSTER=devnet
+EXPO_PUBLIC_SOLANA_RPC_ENDPOINT=https://api.devnet.solana.com
+```
+
+**Constants** ([constants/wallet.ts](constants/wallet.ts)):
 ```typescript
-// constants/wallet.ts
 export const APP_IDENTITY = {
   name: 'Settle',
   uri: 'https://settle.app',
   icon: 'favicon.ico',
 };
 
-export const SOLANA_CLUSTER = 'devnet' as const;
-```
-
-**RPC Endpoint**: Currently defined locally in files that need it:
-```typescript
-// solana/transaction.ts
-const SOLANA_RPC_ENDPOINT = 'https://api.devnet.solana.com';
-
-// app/_layout.tsx
-const SOLANA_RPC_ENDPOINT = 'https://api.devnet.solana.com';
+export const SOLANA_CLUSTER = (process.env.EXPO_PUBLIC_SOLANA_CLUSTER || 'devnet') as 'devnet' | 'testnet' | 'mainnet-beta';
+export const SOLANA_RPC_ENDPOINT = process.env.EXPO_PUBLIC_SOLANA_RPC_ENDPOINT || 'https://api.devnet.solana.com';
 ```
 
 **To switch to mainnet**:
-1. Change `SOLANA_CLUSTER` to `'mainnet-beta'` in [constants/wallet.ts](constants/wallet.ts)
-2. Update `SOLANA_RPC_ENDPOINT` in [solana/transaction.ts](solana/transaction.ts) and [app/_layout.tsx](app/_layout.tsx)
-3. Consider using a paid RPC provider (QuickNode, Alchemy, Helius) for production
+1. Update your `.env` file:
+   ```bash
+   EXPO_PUBLIC_SOLANA_CLUSTER=mainnet-beta
+   EXPO_PUBLIC_SOLANA_RPC_ENDPOINT=https://api.mainnet-beta.solana.com
+   ```
+2. Consider using a paid RPC provider (QuickNode, Alchemy, Helius) for production reliability
+3. No code changes required - all files import from [constants/wallet.ts](constants/wallet.ts)
 
 ---

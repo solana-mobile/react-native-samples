@@ -12,9 +12,7 @@ import 'react-native-reanimated';
 import { ConnectionProvider, AuthorizationProvider, ThemeProvider } from '@/components/providers';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import Toast from 'react-native-toast-message';
-
-// Solana RPC endpoint
-const SOLANA_RPC_ENDPOINT = 'https://api.devnet.solana.com';
+import { SOLANA_RPC_ENDPOINT } from '@/constants/wallet';
 
 export const unstable_settings = {
   anchor: 'login',

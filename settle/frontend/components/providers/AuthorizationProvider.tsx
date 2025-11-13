@@ -15,6 +15,7 @@ import {
 } from '@solana-mobile/mobile-wallet-adapter-protocol-web3js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { APP_IDENTITY, SOLANA_CLUSTER } from '@/constants/wallet';
+import { toBase58 } from '@/utils/mwa';
 
 /**
  * Account represents a wallet account with its public key
@@ -58,47 +59,10 @@ export function useAuthorization(): AuthorizationContextState {
 }
 
 /**
- * Convert address to base58 string format
- * Handles both base58 strings and Uint8Array/byte array formats
- */
-const toBase58String = (address: any): string => {
-  try {
-    // If it's a Uint8Array or array-like, convert directly
-    if (address instanceof Uint8Array || Array.isArray(address)) {
-      const pubkey = new PublicKey(address);
-      return pubkey.toBase58();
-    }
-
-    // If it's a string
-    if (typeof address === 'string') {
-      // Check if it looks like base64 (contains +, /, or =)
-      if (address.includes('+') || address.includes('/') || address.includes('=')) {
-        // Decode base64 to Uint8Array
-        const binaryString = atob(address);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        const pubkey = new PublicKey(bytes);
-        return pubkey.toBase58();
-      }
-      // Otherwise assume it's already base58, validate it
-      const pubkey = new PublicKey(address);
-      return pubkey.toBase58();
-    }
-
-    throw new Error(`Unsupported address format: ${typeof address}`);
-  } catch (error) {
-    console.error('Error converting address to base58:', error, 'Address:', address);
-    throw new Error('Invalid wallet address format');
-  }
-};
-
-/**
  * Convert AuthorizedAccount from MWA to our Account type
  */
 function getAccountFromAuthorizedAccount(account: AuthorizedAccount): Account {
-  const address = toBase58String(account.address);
+  const address = toBase58(account.address);
   return {
     address,
     label: account.label,

@@ -10,6 +10,7 @@ import {
 import { APP_IDENTITY, SOLANA_CLUSTER, SOLANA_RPC_ENDPOINT } from '@/constants/wallet';
 import { getStoredWalletAuth, saveWalletAuth } from '@/apis/auth';
 import { reauthorizeWallet } from './wallet';
+import { isAuthError, isValidAddress } from '@/utils/mwa';
 
 const COINGECKO_PRICE_API = 'https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd';
 
@@ -61,18 +62,6 @@ export const convertSolToUsd = (amountInSol: number, solToUsdRate: number): numb
  * @param amountInUsd - Amount in USD to send
  * @returns Transaction signature if successful
  */
-const isValidSolanaAddress = (address: string): boolean => {
-  try {
-    if (!address || address.length < 32 || address.length > 44) {
-      return false;
-    }
-    new PublicKey(address);
-    return true;
-  } catch {
-    return false;
-  }
-};
-
 export const sendSol = async (
   toAddress: string,
   amountInUsd: number
@@ -82,11 +71,11 @@ export const sendSol = async (
     throw new Error('No wallet connected. Please connect your wallet first.');
   }
 
-  if (!isValidSolanaAddress(cachedAuth.address)) {
+  if (!isValidAddress(cachedAuth.address)) {
     throw new Error('Your wallet address is invalid. Please reconnect your wallet.');
   }
 
-  if (!isValidSolanaAddress(toAddress)) {
+  if (!isValidAddress(toAddress)) {
     throw new Error(
       'Invalid recipient wallet address. The address must be a valid Solana public key (base58 encoded, 32-44 characters).'
     );
@@ -163,13 +152,9 @@ export const sendSol = async (
     };
   } catch (error: any) {
     console.error('Send SOL error:', error);
-    const errorMessage = error.message || '';
 
     // Check if error is due to expired/invalid auth token
-    if (errorMessage.includes('expired') ||
-        errorMessage.includes('invalid') ||
-        errorMessage.includes('auth') ||
-        errorMessage.includes('token')) {
+    if (isAuthError(error)) {
       console.log('Auth token expired, attempting to reauthorize...');
 
       try {
@@ -228,7 +213,7 @@ export const sendSol = async (
     // If not an auth error, return the original error
     return {
       success: false,
-      message: errorMessage || 'Failed to send payment',
+      message: error.message || 'Failed to send payment',
     };
   }
 };

@@ -12,13 +12,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { connectWallet } from '@/apis/auth';
-import { useAuthorization } from '@/components/providers';
-import { transact } from '@solana-mobile/mobile-wallet-adapter-protocol-web3js';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useMWA, getFriendlyErrorMessage } from '@/utils/mwa';
 import Toast from 'react-native-toast-message';
 
 export default function LoginScreen() {
-  const { authorization, authorizeSession } = useAuthorization();
+  const { selectedAccount, connect } = useMWA();
   const [isConnecting, setIsConnecting] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
 
@@ -30,11 +28,11 @@ export default function LoginScreen() {
   const checkCachedSession = async () => {
     try {
       // Check if we have a cached authorization from AuthorizationProvider
-      if (authorization?.selectedAccount) {
-        console.log('Found cached wallet session:', authorization.selectedAccount.address);
+      if (selectedAccount) {
+        console.log('Found cached wallet session:', selectedAccount.address);
 
         // Connect to backend with cached wallet
-        const response = await connectWallet(authorization.selectedAccount.address);
+        const response = await connectWallet(selectedAccount.address);
 
         if (response.success && response.data && !response.data.requiresProfileCompletion) {
           console.log('Session restored successfully');
@@ -57,9 +55,7 @@ export default function LoginScreen() {
       // Step 1: Authorize wallet using Mobile Wallet Adapter
       console.log('Requesting wallet authorization...');
 
-      const account = await transact(async (wallet) => {
-        return await authorizeSession(wallet);
-      });
+      const account = await connect();
 
       console.log('Wallet authorized:', account.address);
 
@@ -96,18 +92,8 @@ export default function LoginScreen() {
     } catch (error: any) {
       console.error('Wallet connection error:', error);
 
-      // Provide user-friendly error messages
-      let errorMessage = 'Failed to connect wallet. Please try again.';
-
-      if (error.message) {
-        if (error.message.includes('declined') || error.message.includes('-1')) {
-          errorMessage = 'Wallet authorization was declined. Please try again and approve the connection.';
-        } else if (error.message.includes('no wallet') || error.message.includes('not found')) {
-          errorMessage = 'No wallet app found. Please install Phantom, Solflare, or another Solana wallet.';
-        } else {
-          errorMessage = error.message;
-        }
-      }
+      // Use friendly error message from MWA utils
+      const errorMessage = getFriendlyErrorMessage(error);
 
       Toast.show({
         type: 'error',

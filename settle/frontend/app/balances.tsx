@@ -9,8 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { getBalances, settleUp, Balance } from '@/apis/balances';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getSolToUsdRate, convertUsdToSol } from '@/solana/transaction';
-import { useConnection, useAuthorization } from '@/components/providers';
-import { useMWAWallet } from '@/components/hooks';
+import { useMWA } from '@/utils/mwa';
 import { Transaction, SystemProgram, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import Toast from 'react-native-toast-message';
 
@@ -21,9 +20,7 @@ export default function BalancesScreen() {
   const colors = Colors[colorScheme ?? 'light'];
 
   // Solana hooks
-  const connection = useConnection();
-  const wallet = useMWAWallet();
-  const { authorization } = useAuthorization();
+  const { publicKey, connection, signAndSendTransaction, connected } = useMWA();
 
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [balances, setBalances] = useState<Balance[]>([]);
@@ -95,7 +92,7 @@ export default function BalancesScreen() {
     }
 
     // Check wallet connection
-    if (!wallet || !authorization) {
+    if (!connected || !publicKey) {
       Toast.show({
         type: 'error',
         text1: 'Wallet Not Connected',
@@ -129,19 +126,19 @@ export default function BalancesScreen() {
       const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
 
       const transaction = new Transaction({
-        feePayer: wallet.publicKey,
+        feePayer: publicKey,
         blockhash,
         lastValidBlockHeight,
       }).add(
         SystemProgram.transfer({
-          fromPubkey: wallet.publicKey,
+          fromPubkey: publicKey,
           toPubkey: new PublicKey(recipientPubkey),
           lamports,
         })
       );
 
       // Step 3: Sign and send transaction
-      const signature = await wallet.signAndSendTransaction(transaction);
+      const signature = await signAndSendTransaction(transaction);
       console.log('Transaction sent:', signature);
 
       // Step 4: Confirm transaction

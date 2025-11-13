@@ -48,6 +48,21 @@ settle/frontend/
 │   ├── create-group.tsx     # Create group screen
 │   ├── settle-up.tsx        # Settle up/payment screen
 │   └── ...                  # Other screens
+├── utils/                   # Utility functions
+│   ├── mwa/                 # MWA utility library (⭐ KEY DIRECTORY)
+│   │   ├── useMWA.ts        # Primary hook (unified MWA interface)
+│   │   ├── auth.ts          # Auth token caching
+│   │   ├── address.ts       # Address conversion utilities
+│   │   ├── errors.ts        # Error handling utilities
+│   │   ├── transact.ts      # Smart transact wrappers
+│   │   ├── types.ts         # TypeScript types
+│   │   └── README.md        # API documentation
+│   ├── api-client.ts        # HTTP client configuration
+│   ├── formatters.ts        # Data formatting utilities
+│   └── validators.ts        # Input validation
+├── solana/                  # Solana/Web3 integration
+│   ├── wallet.ts            # Wallet connection & authorization
+│   └── transaction.ts       # SOL transfers & transactions
 ├── apis/                    # API client functions
 │   ├── auth.ts              # Auth & wallet storage APIs
 │   ├── expenses.ts          # Expense management APIs
@@ -55,9 +70,6 @@ settle/frontend/
 │   ├── friends.ts           # Friends management APIs
 │   ├── activity.ts          # Activity feed APIs
 │   └── index.ts             # API exports
-├── solana/                  # Solana/Web3 integration (⭐ KEY DIRECTORY)
-│   ├── wallet.ts            # Wallet connection & authorization
-│   └── transaction.ts       # SOL transfers & transactions
 ├── components/              # Reusable UI components
 │   ├── common/              # Generic components (Button, Input, etc.)
 │   ├── providers/           # React context providers
@@ -71,10 +83,6 @@ settle/frontend/
 │   ├── colors.ts            # Color palette
 │   ├── theme.ts             # Theme configuration
 │   └── typography.ts        # Typography settings
-├── utils/                   # Utility functions
-│   ├── api-client.ts        # HTTP client configuration
-│   ├── formatters.ts        # Data formatting utilities
-│   └── validators.ts        # Input validation
 ├── styles/                  # Screen-specific styles
 ├── types/                   # TypeScript type definitions
 │   └── index.ts             # Shared types
@@ -83,11 +91,19 @@ settle/frontend/
 
 ### Key Directories for Web3 Integration
 
-- **[solana/](solana/)**: All Solana/Web3 logic is isolated here
+- **[utils/mwa/](utils/mwa/)**: MWA utility library - Unified API for wallet operations ⭐
+  - [useMWA.ts](utils/mwa/useMWA.ts): Primary hook providing all MWA functionality
+  - [auth.ts](utils/mwa/auth.ts): Auth token caching and AsyncStorage operations
+  - [address.ts](utils/mwa/address.ts): Address format conversion (base64 → base58)
+  - [errors.ts](utils/mwa/errors.ts): Error detection and friendly error messages
+  - [transact.ts](utils/mwa/transact.ts): Smart transaction wrappers with auto-retry
+  - [README.md](utils/mwa/README.md): Complete API documentation
+
+- **[solana/](solana/)**: Solana/Web3 integration
   - [wallet.ts](solana/wallet.ts): Wallet authorization, reauthorization, disconnection
   - [transaction.ts](solana/transaction.ts): SOL transfers, balance checking, USD/SOL conversion
 
-- **[apis/auth.ts](apis/auth.ts)**: Wallet session persistence (AsyncStorage)
+- **[apis/auth.ts](apis/auth.ts)**: Wallet session persistence (delegates to MWA utilities)
 
 - **[app/_layout.tsx](app/_layout.tsx)**: Crypto polyfill setup (MUST be first import!)
 
@@ -186,6 +202,51 @@ getRandomValues available: true
 
 ---
 
+## MWA Utility Library
+
+### Overview
+
+The app includes a custom MWA utility library ([utils/mwa/](utils/mwa/)) that provides a simplified, unified API for Mobile Wallet Adapter operations. This reduces boilerplate code and centralizes common patterns.
+
+### Core Components
+
+#### 1. **useMWA Hook** - [utils/mwa/useMWA.ts](utils/mwa/useMWA.ts)
+Primary interface combining all MWA functionality:
+- Connection state (`publicKey`, `address`, `connected`)
+- Auth methods (`connect()`, `disconnect()`)
+- Transaction methods (`signTransaction()`, `signAndSendTransaction()`)
+- Utilities (`connection`, `authorization`)
+
+#### 2. **AuthCache** - [utils/mwa/auth.ts](utils/mwa/auth.ts)
+Centralized AsyncStorage operations for auth tokens:
+- `getToken()` / `setToken()` - Auth token caching
+- `getAddress()` / `setAddress()` - Wallet address caching
+- `storeWalletAuth()` / `getStoredWalletAuth()` - Combined operations
+- `clear()` - Clear all auth data
+
+#### 3. **Address Utilities** - [utils/mwa/address.ts](utils/mwa/address.ts)
+Address format conversion and validation:
+- `toBase58()` - Convert base64/Uint8Array to base58
+- `isValidAddress()` - Validate Solana addresses
+- `toPublicKey()` - Convert to PublicKey object
+- `shortenAddress()` - Format for display
+
+#### 4. **Error Utilities** - [utils/mwa/errors.ts](utils/mwa/errors.ts)
+Centralized error detection and friendly messages:
+- `isAuthError()` - Detect auth/token errors
+- `isUserRejection()` - Detect user cancellations
+- `getFriendlyErrorMessage()` - User-friendly error text
+- `MWAError` class - Typed error handling
+
+#### 5. **Transact Wrappers** - [utils/mwa/transact.ts](utils/mwa/transact.ts)
+Smart transaction wrappers with auto-retry:
+- `transactWithAuth()` - Auth-aware transact wrapper
+- `signWithWallet()` - Simplified signing with retry
+
+For complete API documentation, see [utils/mwa/README.md](utils/mwa/README.md).
+
+---
+
 ## Wallet Connection
 
 ### Implementation: [solana/wallet.ts](solana/wallet.ts)
@@ -280,8 +341,24 @@ W2PUJtIPF4G1j+EsMPd5EHBRVZIa8NhQ9YRDiaolsL8=
 
 ### Solution: Address Conversion
 
+The app uses the `toBase58()` utility from [utils/mwa/address.ts](utils/mwa/address.ts):
+
 ```typescript
-const toBase58String = (address: any): string => {
+import { toBase58 } from '@/utils/mwa';
+
+// Convert any address format to base58
+const base58Address = toBase58(authorizationResult.accounts[0].address);
+```
+
+**Implementation** ([utils/mwa/address.ts](utils/mwa/address.ts)):
+```typescript
+export function toBase58(address: any): string {
+  // If it's a Uint8Array or array-like, convert directly
+  if (address instanceof Uint8Array || Array.isArray(address)) {
+    const pubkey = new PublicKey(address);
+    return pubkey.toBase58();
+  }
+
   // If it's a string with base64 characters (+, /, =)
   if (typeof address === 'string' &&
       (address.includes('+') || address.includes('/') || address.includes('='))) {
@@ -291,7 +368,6 @@ const toBase58String = (address: any): string => {
     for (let i = 0; i < binaryString.length; i++) {
       bytes[i] = binaryString.charCodeAt(i);
     }
-    // Convert to PublicKey and get base58 representation
     const pubkey = new PublicKey(bytes);
     return pubkey.toBase58();
   }
@@ -299,7 +375,7 @@ const toBase58String = (address: any): string => {
   // If already base58, validate and return
   const pubkey = new PublicKey(address);
   return pubkey.toBase58();
-};
+}
 ```
 
 ### Why This Implementation?
@@ -532,29 +608,38 @@ const connection = new Connection(SOLANA_RPC_ENDPOINT, 'confirmed');
 
 ## Session Persistence
 
-### Implementation: `apis/auth.ts`
+### Implementation
+
+Session persistence is handled by the MWA utility library's `AuthCache` ([utils/mwa/auth.ts](utils/mwa/auth.ts)):
 
 ```typescript
-export const storeWalletAuth = async (
-  authToken: string,
-  address: string
-): Promise<void> => {
-  await AsyncStorage.multiSet([
-    ['wallet_auth_token', authToken],
-    ['wallet_address', address],
-  ]);
+import { AuthCache } from '@/utils/mwa';
+
+// Store auth token and address
+await AuthCache.storeWalletAuth(authToken, address);
+
+// Retrieve cached session
+const cached = await AuthCache.getStoredWalletAuth();
+if (cached) {
+  console.log('Found session:', cached.address);
+}
+
+// Clear on logout
+await AuthCache.clear();
+```
+
+The `apis/auth.ts` file now delegates to `AuthCache`:
+
+```typescript
+// apis/auth.ts
+import { AuthCache } from '@/utils/mwa';
+
+export const storeWalletAuth = async (authToken: string, address: string) => {
+  return AuthCache.storeWalletAuth(authToken, address);
 };
 
 export const getStoredWalletAuth = async () => {
-  const [[, authToken], [, address]] = await AsyncStorage.multiGet([
-    'wallet_auth_token',
-    'wallet_address',
-  ]);
-
-  if (authToken && address) {
-    return { authToken, address };
-  }
-  return null;
+  return AuthCache.getStoredWalletAuth();
 };
 ```
 
@@ -618,115 +703,6 @@ const checkCachedSession = async () => {
 
 ---
 
-## Error Handling
-
-### Address Validation Errors
-
-```typescript
-// solana/transaction.ts
-if (!isValidSolanaAddress(toAddress)) {
-  throw new Error(
-    'Invalid recipient wallet address. The address must be a valid Solana ' +
-    'public key (base58 encoded, 32-44 characters).'
-  );
-}
-```
-
-**Why Detailed Messages**:
-- Help developers debug integration issues
-- Guide users to fix their input
-- Reduce support requests
-- Build trust through transparency
-
-### Transaction Errors
-
-```typescript
-// Check confirmation result
-if (confirmation.value.err) {
-  throw new Error('Transaction failed: ' + JSON.stringify(confirmation.value.err));
-}
-```
-
-**Why Check `confirmation.value.err`**:
-- Transaction can be submitted but fail execution
-- Network errors vs runtime errors
-- Insufficient balance, invalid instruction, etc.
-- User needs to know specific failure reason
-
-### Wallet Connection Errors
-
-```typescript
-// solana/wallet.ts
-if (errorMessage.includes('declined') || errorMessage.includes('-1')) {
-  throw new Error('Wallet authorization was declined. Please try again and approve the connection.');
-} else if (errorMessage.includes('no wallet') || errorMessage.includes('not found')) {
-  throw new Error('No wallet app found. Please install Phantom, Solflare, or another Solana wallet.');
-}
-```
-
-**Why Categorize Errors**:
-- User-actionable messages
-- Different errors need different solutions
-- Distinguish user cancellation from bugs
-- Improve user education
-
----
-
-## Testing & Development
-
-### Using Devnet
-
-Configure devnet in your `.env` file:
-
-```bash
-# .env
-EXPO_PUBLIC_SOLANA_CLUSTER=devnet
-EXPO_PUBLIC_SOLANA_RPC_ENDPOINT=https://api.devnet.solana.com
-```
-
-These values are then imported from [constants/wallet.ts](constants/wallet.ts):
-
-```typescript
-// constants/wallet.ts
-export const SOLANA_CLUSTER = (process.env.EXPO_PUBLIC_SOLANA_CLUSTER || 'devnet') as 'devnet' | 'testnet' | 'mainnet-beta';
-export const SOLANA_RPC_ENDPOINT = process.env.EXPO_PUBLIC_SOLANA_RPC_ENDPOINT || 'https://api.devnet.solana.com';
-
-// solana/transaction.ts
-import { SOLANA_RPC_ENDPOINT } from '@/constants/wallet';
-const connection = new Connection(SOLANA_RPC_ENDPOINT, 'confirmed');
-```
-
-### Seed Data with Valid Addresses in Backend
-
-```javascript
-// backend/scripts/seed.js
-const dummyUsers = [
-  {
-    id: generateId(),
-    pubkey: '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU', // Valid base58
-    name: 'Alice',
-    phone: '+11234567890'
-  },
-];
-```
-
-**Why Use Valid Test Addresses**:
-- Can actually send transactions in development
-- Tests full flow including blockchain interaction
-- Catches address validation bugs early
-- Realistic testing environment
-
-### RPC Endpoint Selection
-
-Configure in your `.env` file:
-
-```bash
-EXPO_PUBLIC_SOLANA_RPC_ENDPOINT=https://api.devnet.solana.com
-```
-
----
-
-
 ## Common Issues & Solutions
 
 ### Issue: "crypto.getRandomValues() not supported" Error
@@ -743,7 +719,11 @@ EXPO_PUBLIC_SOLANA_RPC_ENDPOINT=https://api.devnet.solana.com
 
 ### Issue: "Non-base58 character" Error
 **Cause**: Address is in base64 format
-**Solution**: Use `toBase58String()` helper to convert
+**Solution**: Use the `toBase58()` utility from [utils/mwa/address.ts](utils/mwa/address.ts):
+```typescript
+import { toBase58 } from '@/utils/mwa';
+const base58Address = toBase58(address);
+```
 
 ### Issue: "Transaction expired" Error
 **Cause**: Blockhash too old (>150 blocks)
@@ -758,57 +738,6 @@ EXPO_PUBLIC_SOLANA_RPC_ENDPOINT=https://api.devnet.solana.com
 **Solution**: Check balance first, add buffer for fees (~0.000005 SOL)
 
 ---
-
-## Resources
-
-### Official Documentation
-- [Solana Mobile Docs](https://docs.solanamobile.com/react-native/overview)
-- [Mobile Wallet Adapter Spec](https://github.com/solana-mobile/mobile-wallet-adapter)
-- [Solana Web3.js Docs](https://solana-labs.github.io/solana-web3.js/)
-
-### Developer Tools
-- [Solana Explorer (Devnet)](https://explorer.solana.com/?cluster=devnet)
-- [Solana Faucet](https://faucet.solana.com/)
-- [Solana Cookbook](https://solanacookbook.com/)
-
-### Sample Apps
-- [Solana Mobile dApp Scaffold](https://github.com/solana-mobile/solana-mobile-dapp-scaffold)
-- [Mobile Wallet Adapter Example](https://github.com/solana-mobile/mobile-wallet-adapter/tree/main/examples)
-
----
-
-## Key Implementation Details
-
-### File Organization
-
-The Web3 integration follows a clean separation of concerns:
-
-1. **[solana/wallet.ts](solana/wallet.ts)** - Wallet operations
-   - `authorizeWallet()`: Initial wallet connection
-   - `reauthorizeWallet(token)`: Silent reauth with cached token
-   - `disconnectWallet(token)`: Deauthorize and cleanup
-   - `toBase58String()`: Address format conversion
-
-2. **[solana/transaction.ts](solana/transaction.ts)** - Transaction operations
-   - `sendSol(toAddress, amountInUsd)`: Send SOL payments
-   - `getSolBalance(address)`: Query wallet balance
-   - `getSolToUsdRate()`: Fetch live SOL/USD price
-   - `convertUsdToSol()` / `convertSolToUsd()`: Currency conversion
-
-3. **[apis/auth.ts](apis/auth.ts)** - Session management
-   - `saveWalletAuth()`: Store auth token & address
-   - `getStoredWalletAuth()`: Retrieve cached session
-   - `clearWalletAuth()`: Remove session on logout
-
-4. **[app/login.tsx](app/login.tsx)** - Login flow
-   - Check for cached session on mount
-   - Auto-login if valid token exists
-   - Handle wallet connection UI
-
-5. **[app/settle-up.tsx](app/settle-up.tsx)** - Payment flow
-   - Select recipient and amount
-   - Call `sendSol()` from transaction service
-   - Display transaction status
 
 ### Important Constants
 
@@ -831,14 +760,20 @@ export const APP_IDENTITY = {
 export const SOLANA_CLUSTER = (process.env.EXPO_PUBLIC_SOLANA_CLUSTER || 'devnet') as 'devnet' | 'testnet' | 'mainnet-beta';
 export const SOLANA_RPC_ENDPOINT = process.env.EXPO_PUBLIC_SOLANA_RPC_ENDPOINT || 'https://api.devnet.solana.com';
 ```
-
-**To switch to mainnet**:
-1. Update your `.env` file:
-   ```bash
-   EXPO_PUBLIC_SOLANA_CLUSTER=mainnet-beta
-   EXPO_PUBLIC_SOLANA_RPC_ENDPOINT=https://api.mainnet-beta.solana.com
-   ```
-2. Consider using a paid RPC provider (QuickNode, Alchemy, Helius) for production reliability
-3. No code changes required - all files import from [constants/wallet.ts](constants/wallet.ts)
-
 ---
+
+## Resources
+
+### Official Documentation
+- [Solana Mobile Docs](https://docs.solanamobile.com/react-native/overview)
+- [Mobile Wallet Adapter Spec](https://github.com/solana-mobile/mobile-wallet-adapter)
+- [Solana Web3.js Docs](https://solana-labs.github.io/solana-web3.js/)
+
+### Developer Tools
+- [Solana Explorer (Devnet)](https://explorer.solana.com/?cluster=devnet)
+- [Solana Faucet](https://faucet.solana.com/)
+- [Solana Cookbook](https://solanacookbook.com/)
+
+### Sample Apps
+- [Solana Mobile dApp Scaffold](https://github.com/solana-mobile/solana-mobile-dapp-scaffold)
+- [Mobile Wallet Adapter Example](https://github.com/solana-mobile/mobile-wallet-adapter/tree/main/examples)

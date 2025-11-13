@@ -1,139 +1,66 @@
-# [App Name]
+# README Template Structure
 
-> One-line description of what the app does and its primary purpose.
+This directory contains README templates for the react-native-samples repository.
 
-**Tech Stack:** React Native, Expo, [Additional Technologies]
+## Three-Tier Documentation Structure
 
-📖 **[View Technical Deep Dive →](TECHNICAL-GUIDE.md)** _(optional, for complex apps)_
+Sample apps should follow a three-tier documentation structure:
 
-## Features
+### Tier 1: Root README (`app-name/README.md`)
+High-level overview with screenshots, features, and basic setup for the entire app.
 
-- Feature 1 description
-- Feature 2 description
-- Feature 3 description
+**Template:** [ROOT-README-TEMPLATE.md](ROOT-README-TEMPLATE.md)
 
-## Screenshots
+**Purpose:**
+- Give visitors a quick understanding of what the app does
+- Show visual demos (screenshots/videos)
+- List key features
+- Explain project structure (frontend/backend/etc)
+- Provide quick setup instructions for all parts
+- Link to detailed submodule READMEs
 
-[Add screenshots or demo GIF here]
+### Tier 2: Submodule READMEs (`app-name/frontend/README.md`, `app-name/backend/README.md`)
+Detailed technical documentation for specific parts of the app.
 
----
+**Template:** [SUBMODULE-README-TEMPLATE.md](SUBMODULE-README-TEMPLATE.md)
 
-## Quick Start
+**Purpose:**
+- Detailed tech stack and dependencies
+- Comprehensive setup and configuration
+- Project structure for that module
+- Key concepts and implementation details
+- Common issues and troubleshooting
+- Links to technical deep dives
 
-### Prerequisites
+### Tier 3: Technical Deep Dive (`TECHNICAL-GUIDE.md`) - Optional
+For complex implementations, add a `TECHNICAL-GUIDE.md` in the submodule directory.
 
-- Android device or emulator
-- Node.js 18+
-- [Any other specific requirements]
+**Purpose:**
+- In-depth explanation of implementation decisions
+- Why specific approaches were chosen
+- Code examples and detailed walkthroughs
+- Advanced configuration options
 
-### Installation
-
-```bash
-# Clone the repository
-git clone [repo-url]
-cd [app-folder]
-
-# Install dependencies
-npm install
-
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your configuration
-```
-
-### Running the App
-
-```bash
-# Generate native projects
-npx expo prebuild --clean
-
-# Run on Android
-npx expo run:android
-
-# For development with hot reload
-npm start
-```
-
----
-
-## Project Structure
+## Example Structure
 
 ```
-app-name/
-├── app/                    # Expo Router screens
-│   ├── (tabs)/            # Tab navigation
-│   └── _layout.tsx        # Root layout
-├── components/            # Reusable components
-├── apis/                  # API integration
-├── constants/             # App constants
-├── utils/                 # Utility functions
-└── assets/                # Static assets
+sample-app/
+├── README.md                          # Root-level overview (use ROOT-README-TEMPLATE.md)
+├── frontend/
+│   ├── README.md                      # Detailed frontend docs (use SUBMODULE-README-TEMPLATE.md)
+│   └── TECHNICAL-GUIDE.md             # Optional: Deep dive into complex features
+└── backend/
+    └── README.md                      # Detailed backend docs (use SUBMODULE-README-TEMPLATE.md)
 ```
 
----
+## Templates
 
-## Configuration
+- **[ROOT-README-TEMPLATE.md](ROOT-README-TEMPLATE.md)** - Use for root-level app overview
+- **[SUBMODULE-README-TEMPLATE.md](SUBMODULE-README-TEMPLATE.md)** - Use for frontend/backend/module-specific documentation
 
-### Environment Variables
+## Real Example
 
-Required variables in `.env`:
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `EXPO_PUBLIC_API_URL` | Backend API endpoint | `http://10.0.2.2:3000/api` |
-| `EXPO_PUBLIC_FOO` | Description | `value` |
-
-[Additional configuration sections as needed]
-
----
-
-## Key Concepts
-
-### [Feature 1 Name]
-
-Brief explanation of how this feature works and why implementation decisions were made.
-
-**Why this approach?** Explain the reasoning behind key decisions.
-
-**Files:** [component.tsx](path/to/component.tsx)
-
-### [Feature 2 Name]
-
-Brief explanation of implementation approach.
-
-**Files:** [service.ts](path/to/service.ts)
-
-_Note: Keep this section concise (2-3 sentences per feature). For detailed implementation explanations, create a TECHNICAL-GUIDE.md._
-
----
-
-## Common Issues
-
-### Issue: Description of Problem
-**Solution:** Steps to resolve
-
-### Issue: Another Problem
-**Solution:** How to fix
-
----
-
-## Documentation
-
-_For complex apps with detailed implementation explanations:_
-
-- **[TECHNICAL-GUIDE.md](TECHNICAL-GUIDE.md)** - Comprehensive guide explaining all implementation details
-- **[Backend README](../backend/README.md)** - API server documentation _(if applicable)_
-
----
-
-## Resources
-
-- [Relevant Documentation Link 1](url)
-- [Relevant Documentation Link 2](url)
-- [Tutorial or Guide](url)
-
----
-
-## License
-
-[License Information]
+See the **Settle** app for a reference implementation:
+- [settle/README.md](../settle/README.md) - Root overview with screenshots
+- [settle/frontend/README.md](../settle/frontend/README.md) - Detailed frontend documentation
+- [settle/frontend/TECHNICAL-GUIDE.md](../settle/frontend/TECHNICAL-GUIDE.md) - Deep dive into Solana integration

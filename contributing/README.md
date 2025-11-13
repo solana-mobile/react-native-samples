@@ -4,67 +4,122 @@ Welcome to the React Native Samples contributing guide! This directory contains 
 
 ## Quick Links
 
-- **[README-TEMPLATE.md](README-TEMPLATE.md)** - Copy this template for your app's quick-start README
-- **[SAMPLE-APP-GUIDE.md](SAMPLE-APP-GUIDE.md)** - Detailed guide on how to write effective documentation
+- **[README-TEMPLATE.md](README-TEMPLATE.md)** - Overview of the two-level README structure
+- **[ROOT-README-TEMPLATE.md](ROOT-README-TEMPLATE.md)** - Template for app root README (with screenshots)
+- **[SUBMODULE-README-TEMPLATE.md](SUBMODULE-README-TEMPLATE.md)** - Template for frontend/backend READMEs
+- **[SAMPLE-APP-GUIDE.md](SAMPLE-APP-GUIDE.md)** - Detailed guide on writing effective documentation
 
-## Two-Tier Documentation System
+## Documentation Structure
 
-We use a two-tier documentation approach for sample apps:
+Sample apps use a **three-tier documentation structure**:
 
-### 📄 README.md (Quick Start)
-- **Purpose:** Get developers running the app in under 5 minutes
-- **Length:** ~150-250 lines
-- **Use for:** All sample apps
+### Tier 1: Root README (`app-name/README.md`)
+- **Purpose:** High-level overview with screenshots and quick setup
+- **Length:** ~150-300 lines
+- **Template:** [ROOT-README-TEMPLATE.md](ROOT-README-TEMPLATE.md)
+- **Contains:**
+  - Screenshots and visual demos
+  - Key features
+  - Project structure (frontend/backend)
+  - Quick setup for all components
+  - Links to detailed submodule docs
 
-### 📖 TECHNICAL-GUIDE.md (Deep Dive)
-- **Purpose:** Detailed implementation explanations and learning resource
+### Tier 2: Submodule READMEs (`app-name/frontend/README.md`, `app-name/backend/README.md`)
+- **Purpose:** Detailed technical documentation for specific modules
+- **Length:** ~200-400 lines
+- **Template:** [SUBMODULE-README-TEMPLATE.md](SUBMODULE-README-TEMPLATE.md)
+- **Contains:**
+  - Detailed setup and configuration
+  - Project structure (detailed)
+  - Key concepts (brief, 2-3 sentences each)
+  - Common issues and troubleshooting
+  - Links to TECHNICAL-GUIDE.md (if needed)
+
+### Tier 3: Technical Deep Dive (`app-name/frontend/TECHNICAL-GUIDE.md`) - Optional
+- **Purpose:** In-depth implementation explanations and learning resource
 - **Length:** Unlimited (can be 800+ lines)
-- **Use for:** Complex apps with Web3, state management, or advanced patterns
+- **Use for:** Complex integrations (Web3, advanced patterns, etc.)
+- **Contains:**
+  - Detailed "why" behind decisions
+  - Code walkthroughs
+  - Architecture discussions
+  - Best practices and gotchas
 
 ## When to Use Each
 
-### Use Only README.md
-- Simple UI demos
-- Basic CRUD apps
-- Straightforward component examples
-- Apps with minimal setup
+### Root README Only
+- Very simple demos with no backend
+- Single-file examples
+- Minimal setup required
 
-### Use README.md + TECHNICAL-GUIDE.md
+### Root + Submodule READMEs
+- **All apps with frontend + backend**
+- Apps with multiple components
+- Apps requiring environment configuration
+
+### Add TECHNICAL-GUIDE.md When:
 - Web3/Solana integration apps
 - Complex state management patterns
 - Advanced architectural demonstrations
-- Apps meant for learning specific technologies
+- Implementation details are educational
 
 ## Example: Settle App
 
-The Settle app demonstrates the two-tier approach:
+The Settle app demonstrates the complete structure:
 
-- **[README.md](../settle/frontend/README.md)** - Quick start guide (~200 lines)
-  - Installation and running
-  - Environment configuration
-  - High-level key concepts
+- **[settle/README.md](../settle/README.md)** - Root overview with screenshots (~150 lines)
+  - App description and demo
+  - Screenshots organized by feature
+  - Key features list
+  - Quick setup for frontend + backend
+
+- **[settle/frontend/README.md](../settle/frontend/README.md)** - Detailed frontend docs (~200 lines)
+  - Detailed installation and configuration
+  - Project structure
+  - Key concepts (brief)
   - Common issues
 
-- **[TECHNICAL-GUIDE.md](../settle/frontend/TECHNICAL-GUIDE.md)** - Deep dive (~900 lines)
-  - Detailed implementation explanations
-  - Why each decision was made
+- **[settle/frontend/TECHNICAL-GUIDE.md](../settle/frontend/TECHNICAL-GUIDE.md)** - Technical deep dive (~900 lines)
+  - MWA utility library explanation
+  - Detailed implementation decisions
   - Code walkthroughs
-  - Architecture discussions
+  - Why each approach was chosen
 
 ## Getting Started
 
-1. Copy [README-TEMPLATE.md](README-TEMPLATE.md) to your app folder
-2. Follow the guidelines in [SAMPLE-APP-GUIDE.md](SAMPLE-APP-GUIDE.md)
-3. For complex apps, create a TECHNICAL-GUIDE.md
-4. Review using the checklists in the guide
+### For New Apps:
+
+1. **Create root README:**
+   - Copy [ROOT-README-TEMPLATE.md](ROOT-README-TEMPLATE.md) to `app-name/README.md`
+   - Add screenshots and demos
+   - List key features
+   - Provide quick setup for all components
+
+2. **Create submodule READMEs:**
+   - Copy [SUBMODULE-README-TEMPLATE.md](SUBMODULE-README-TEMPLATE.md) to `app-name/frontend/README.md`
+   - Add detailed setup and configuration
+   - Document project structure
+   - Add common issues
+
+3. **Optional - Add technical guide:**
+   - Create `app-name/frontend/TECHNICAL-GUIDE.md` for complex implementations
+   - Explain "why" behind decisions in depth
+   - Include code walkthroughs
+
+4. **Follow the guide:**
+   - Read [SAMPLE-APP-GUIDE.md](SAMPLE-APP-GUIDE.md) for detailed guidelines
+   - Use the review checklists
+   - Check the Settle app for reference
 
 ## Philosophy
 
 Documentation should be:
+- ✅ **Layered** - Overview → Details → Deep dive
 - ✅ **Concise** - Quick to scan and read
 - ✅ **Practical** - Focus on running code, not theory
 - ✅ **Progressive** - Start simple, link to deep dives
 - ✅ **Beginner-friendly** - Assume minimal prior knowledge
+- ✅ **Visual** - Use screenshots to show, not just tell
 
 ---
 

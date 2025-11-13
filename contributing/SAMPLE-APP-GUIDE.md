@@ -1,111 +1,190 @@
 # Sample App Documentation Guide
 
-This guide explains how to document new sample apps in this repository using our standardized template.
+This guide explains how to document new sample apps in this repository using our standardized templates.
 
 ## Philosophy
 
-Sample app READMEs should be:
-- **Concise**: Get developers running the app quickly
-- **Practical**: Focus on what's needed, not comprehensive tutorials
+Sample app documentation should be:
+- **Layered**: Overview → Detailed → Deep dive
+- **Concise**: Get developers running quickly
+- **Practical**: Focus on what's needed
 - **Scannable**: Use headers, lists, and tables for easy navigation
+- **Visual**: Use screenshots to show, not just tell
 - **Beginner-friendly**: Assume minimal prior knowledge
 
-## Two-Tier Documentation System
+## Three-Tier Documentation System
 
-For complex apps (especially those with Web3/Solana integration), we use a two-tier approach:
+We use a three-tier documentation approach:
 
-### Tier 1: README.md (Quick Reference)
-- **Purpose:** Get developers running in 5 minutes
-- **Length:** ~150-250 lines
-- **Content:** Installation, configuration, key concepts (high-level), common issues
-- **Audience:** Developers who want to quickly test the app
+### Tier 1: Root README (`app-name/README.md`)
+- **Purpose:** High-level overview with screenshots and basic setup
+- **Length:** ~150-300 lines
+- **Template:** [ROOT-README-TEMPLATE.md](ROOT-README-TEMPLATE.md)
+- **Content:**
+  - App description and what it demonstrates
+  - Screenshots organized by feature
+  - Key features list
+  - Project structure (frontend/backend)
+  - Quick setup for all components
+  - Links to detailed submodule docs
+- **Audience:** Anyone browsing the repo, evaluating the app
 
-### Tier 2: TECHNICAL-GUIDE.md (Deep Dive)
-- **Purpose:** Understand implementation details and "why" behind decisions
-- **Length:** Unlimited (can be 800+ lines for complex integrations)
-- **Content:** Detailed explanations, code walkthroughs, architecture decisions
-- **Audience:** Developers learning the technology or customizing the app
+### Tier 2: Submodule READMEs (`app-name/frontend/README.md`, `app-name/backend/README.md`)
+- **Purpose:** Detailed setup and technical documentation
+- **Length:** ~200-400 lines
+- **Template:** [SUBMODULE-README-TEMPLATE.md](SUBMODULE-README-TEMPLATE.md)
+- **Content:**
+  - Detailed installation and dependencies
+  - Environment configuration
+  - Detailed project structure
+  - Key concepts (brief, 2-3 sentences)
+  - Common issues and troubleshooting
+  - Links to TECHNICAL-GUIDE.md (if exists)
+- **Audience:** Developers setting up and running the specific module
 
-**When to use both?**
+### Tier 3: Technical Deep Dive (`app-name/frontend/TECHNICAL-GUIDE.md`) - Optional
+- **Purpose:** In-depth implementation explanations
+- **Length:** Unlimited (can be 800+ lines)
+- **Content:**
+  - Detailed "why" behind decisions
+  - Code walkthroughs
+  - Architecture discussions
+  - Best practices and gotchas
+- **Audience:** Developers learning the technology or customizing deeply
+
+## When to Use Each
+
+### Root README Only
+- Very simple single-file demos
+- Minimal setup required
+- **Rare - most apps should have submodule READMEs**
+
+### Root + Submodule READMEs (Most Common)
+- **All apps with frontend + backend**
+- Apps with multiple components
+- Apps requiring environment configuration
+- Standard for this repository
+
+### Add TECHNICAL-GUIDE.md When
 - Web3/Solana integration apps
-- Apps with complex state management
-- Apps demonstrating advanced patterns
-- Any app where implementation details are educational
+- Complex state management patterns
+- Advanced architectural demonstrations
+- Implementation details are educational
+- "Why" explanations would clutter the README
 
-**When is README.md enough?**
-- Simple UI demos
-- Basic CRUD apps
-- Straightforward examples
+## Using the Templates
 
-## Using the Template
+### Step 1: Root README
 
-1. Copy [README-TEMPLATE.md](./README-TEMPLATE.md) to your app's root directory
-2. Rename it to `README.md`
-3. Fill in each section following the guidelines below
-4. **For complex apps:** Create `TECHNICAL-GUIDE.md` with detailed explanations
+1. Copy [ROOT-README-TEMPLATE.md](ROOT-README-TEMPLATE.md) to `app-name/README.md`
+2. Fill in the template:
+   - App name and description
+   - Add screenshots (organize by feature/flow)
+   - List 3-6 key features
+   - Show project structure
+   - Add quick setup for frontend/backend
+3. Keep it visual and high-level
+
+### Step 2: Submodule READMEs
+
+1. Copy [SUBMODULE-README-TEMPLATE.md](SUBMODULE-README-TEMPLATE.md) to `app-name/frontend/README.md` (and `backend/README.md` if applicable)
+2. Fill in the template:
+   - Detailed installation and dependencies
+   - Environment configuration with tables
+   - Detailed project structure
+   - Key concepts (2-3 sentences each)
+   - Common issues and troubleshooting
+   - Link to TECHNICAL-GUIDE.md if it exists
+3. Keep technical details concise - deep dives go in TECHNICAL-GUIDE.md
+
+### Step 3: Technical Deep Dive (Optional)
+
+1. Create `app-name/frontend/TECHNICAL-GUIDE.md` only if needed
+2. Include:
+   - Detailed "why" behind decisions
+   - Code walkthroughs with examples
+   - Architecture discussions
+   - Best practices and gotchas
+3. Link back to README.md at the top
 
 ---
 
 ## Section Guidelines
 
-### Header
+### For Root README (app-name/README.md)
 
-- **App Name**: Clear, descriptive name
-- **One-liner**: Single sentence describing the app's purpose
-- **Tech Stack**: List major technologies (keep it short)
+**Header:**
+- App name and one-sentence description
+- "What is this?" section explaining the demo's purpose
+- List major technologies (keep brief)
 
-### Features
+**Screenshots & Demo:**
+- Organize by feature or user flow
+- Use tables for side-by-side comparison
+- Height: 360px for mobile screenshots
+- Label each section clearly
 
-- Bullet list of 3-5 key features
+**Features:**
+- Bullet list of 3-6 key features
 - Keep each point to one line
 - Focus on user-facing functionality
 
-### Quick Start
+**Project Structure:**
+- Show only top-level directories (frontend/, backend/)
+- Brief description of each component
+- Keep it simple - detailed structure goes in submodule READMEs
 
-- **Installation**: Copy-paste commands that work
-- **Running**: Most common commands only
-- Use code blocks for all commands
-- Include environment setup if needed
+**Quick Start:**
+- Installation commands for all components
+- Basic configuration steps
+- Running commands for frontend and backend
+- Link to detailed docs in submodule READMEs
 
-### Project Structure
+### For Submodule READMEs (app-name/frontend/README.md, app-name/backend/README.md)
 
-- Show only the most important directories
-- Add brief comments explaining each
-- Use tree format for visual clarity
-- Omit standard files (package.json, tsconfig.json, etc.)
+**Tech Stack:**
+- List specific versions and dependencies
+- More detailed than root README
 
-### Configuration
+**Quick Start:**
+- Detailed installation steps
+- All prerequisite requirements
+- Running commands with explanations
 
+**Configuration:**
 - Use tables for environment variables
 - Only document what users must change
 - Provide working examples
 - Link to external docs for complex setups
 
-### Key Concepts (formerly "Key Implementation Details")
+**Project Structure:**
+- Detailed directory tree
+- Explain purpose of each important directory
+- Omit standard files (package.json, tsconfig.json, etc.)
+- Highlight key integration directories with ⭐
 
+**Key Concepts:**
 - 2-4 subsections max
 - Explain "why" not just "what"
 - Link to actual code files
 - Keep explanations to 2-3 sentences
 - **For detailed explanations, use TECHNICAL-GUIDE.md**
 
-### Common Issues
-
+**Common Issues:**
 - Only include issues users actually encounter
 - Provide actionable solutions
 - Link to GitHub issues if applicable
 
-### Tech Decisions
-
-- Explain non-obvious choices
-- Help developers understand tradeoffs
-- Optional section - only if needed
+**Resources:**
+- Official documentation links
+- Developer tools
+- Sample apps and references
 
 ---
 
 ## What to Avoid
 
-### ❌ Don't Include
+### Don't Include
 
 - Comprehensive API documentation (link to it instead)
 - Step-by-step tutorials (focus on setup)
@@ -113,7 +192,7 @@ For complex apps (especially those with Web3/Solana integration), we use a two-t
 - "Why we chose React Native" explanations
 - Personal opinions without technical rationale
 
-### ❌ Don't Over-Explain in README.md
+### Don't Over-Explain in README.md
 
 **Bad (in README.md):**
 ```
@@ -205,31 +284,63 @@ For production, update to:
 EXPO_PUBLIC_SOLANA_CLUSTER=mainnet-beta
 ```
 
-### Good Implementation Detail
+### Good Key Concept (for Submodule README)
 
 ```markdown
 ### Transaction Signing
 
-SOL payments use the `signAndSendTransactions` API with automatic token refresh.
-
-**Why?** Avoids re-prompting users for every transaction while maintaining security.
+SOL payments use the `signAndSendTransactions` API with automatic token refresh. This avoids re-prompting users for every transaction while maintaining security.
 
 **Files:** [solana/transaction.ts](solana/transaction.ts)
+
+For detailed implementation, see [TECHNICAL-GUIDE.md](TECHNICAL-GUIDE.md#transaction-signing).
+```
+
+### Good Root README Quick Start
+
+```markdown
+## Quick Start (All-in-One)
+
+**1. Clone and Install:**
+```bash
+cd frontend && npm install && cd ../backend && npm install
+```
+
+**2. Run:**
+```bash
+# Terminal 1 - Backend
+cd backend && npm start
+
+# Terminal 2 - Frontend
+cd frontend && npx expo run:android
+```
+
+See [frontend/README.md](frontend/README.md) for detailed setup.
 ```
 
 ---
 
 ## Review Checklist
 
-### For README.md:
-- [ ] Can someone clone and run the app in under 5 minutes?
+### For Root README (app-name/README.md):
+- [ ] Is there a clear app description and "What is this?" section?
+- [ ] Are screenshots included and organized by feature?
+- [ ] Is the project structure shown (frontend/backend)?
+- [ ] Are there quick setup instructions for all components?
+- [ ] Does it link to detailed submodule READMEs?
+- [ ] Is it under 200 lines and visual?
+- [ ] Can someone understand what the app does in under 2 minutes?
+
+### For Submodule READMEs (app-name/frontend/README.md, etc.):
+- [ ] Can someone clone and run this module in under 5 minutes?
 - [ ] Are all commands copy-paste ready?
-- [ ] Is the README under 300 lines?
+- [ ] Is the README under 400 lines?
+- [ ] Are environment variables documented in tables?
+- [ ] Is the detailed project structure shown?
+- [ ] Are Key Concepts kept to 2-3 sentences each?
 - [ ] Are there clear headings for scanning?
-- [ ] Do code examples link to actual files?
-- [ ] Is technical jargon briefly explained with link to TECHNICAL-GUIDE?
-- [ ] Are screenshots/demos included?
-- [ ] Does it explain "why" for non-obvious choices (1-2 sentences)?
+- [ ] Does it link to TECHNICAL-GUIDE.md for deep dives (if applicable)?
+- [ ] Are common issues with solutions included?
 
 ### For TECHNICAL-GUIDE.md (if created):
 - [ ] Does it link back to README.md at the top?
@@ -237,32 +348,57 @@ SOL payments use the `signAndSendTransactions` API with automatic token refresh.
 - [ ] Are code examples annotated with explanations?
 - [ ] Are edge cases and gotchas documented?
 - [ ] Does it follow a logical flow from setup to advanced topics?
+- [ ] Are implementation decisions explained?
+- [ ] Does it serve as a learning resource, not just reference?
 
 ---
 
 ## Template Sections Reference
 
-### README.md (Required)
+### Root README (app-name/README.md) - Required
+**Template:** [ROOT-README-TEMPLATE.md](ROOT-README-TEMPLATE.md)
+
+**Required Sections:**
 - App name and description
+- Screenshots & Demo
+- Key Features list
+- Project Structure (frontend/backend)
+- Quick Start for all components
+
+**Optional Sections:**
+- Tech stack details
+- API endpoints overview
+- Links to submodule READMEs
+
+### Submodule READMEs (app-name/frontend/README.md, etc.) - Required
+**Template:** [SUBMODULE-README-TEMPLATE.md](SUBMODULE-README-TEMPLATE.md)
+
+**Required Sections:**
+- Module description
+- Features
 - Quick Start
-- Configuration
-- Key Concepts (high-level)
+- Configuration (env variables)
+- Project Structure (detailed)
+- Key Concepts (brief)
+
+**Optional Sections:**
+- Screenshots (if not in root)
 - Common Issues
-
-### README.md (Optional)
-- Screenshots
-- Project Structure (recommended)
-- Documentation section (link to TECHNICAL-GUIDE)
 - Resources
+- Documentation links (to TECHNICAL-GUIDE)
 
-### TECHNICAL-GUIDE.md (When Needed)
+### TECHNICAL-GUIDE.md (Optional, When Needed)
+**Use for:** Complex implementations, Web3 integrations, advanced patterns
+
+**Sections:**
 - Table of Contents
 - Detailed setup explanations
 - Implementation deep dives
 - Architecture decisions
 - Code walkthroughs
-- Best practices
+- Best practices and gotchas
 - Advanced topics
+- Why specific approaches were chosen
 
 ---
 

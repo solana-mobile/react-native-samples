@@ -8,11 +8,11 @@
 
 ## Features
 
-- 🔐 Connect Solana wallet via Mobile Wallet Adapter
-- 👥 Add friends via phone number or public key
-- 🏷️ Create groups and split expenses
-- 💸 Send SOL payments with automatic USD conversion
-- 📊 View transaction history with Solscan integration
+- Connect Solana wallet via Mobile Wallet Adapter
+- Add friends via phone number or public key
+- Create groups and split expenses
+- Send SOL payments with automatic USD conversion
+- View transaction history
 
 ---
 
@@ -29,10 +29,6 @@
 ```bash
 # Install dependencies
 npm install
-
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your configuration
 ```
 
 ### Running the App
@@ -62,12 +58,6 @@ EXPO_PUBLIC_SOLANA_CLUSTER=devnet
 EXPO_PUBLIC_SOLANA_RPC_ENDPOINT=https://api.devnet.solana.com
 ```
 
-**For Production (Mainnet):**
-```bash
-EXPO_PUBLIC_SOLANA_CLUSTER=mainnet-beta
-EXPO_PUBLIC_SOLANA_RPC_ENDPOINT=https://api.mainnet-beta.solana.com
-```
-
 ### Critical Setup: Crypto Polyfill
 
 React Native requires a crypto polyfill for Solana Web3.js. **Import it first** in [app/_layout.tsx](app/_layout.tsx):
@@ -94,7 +84,15 @@ settle/frontend/
 │   ├── login.tsx            # Wallet login screen
 │   ├── add-expense.tsx      # Add expense screen
 │   └── settle-up.tsx        # Payment screen
-├── solana/                  # Web3 integration ⭐
+├── utils/                   # Utility functions
+│   └── mwa/                 # MWA utility library ⭐
+│       ├── useMWA.ts        # Primary hook (unified MWA interface)
+│       ├── auth.ts          # Auth token caching
+│       ├── address.ts       # Address conversion utilities
+│       ├── errors.ts        # Error handling utilities
+│       ├── transact.ts      # Smart transact wrappers
+│       └── types.ts         # TypeScript types
+├── solana/                  # Web3 integration
 │   ├── wallet.ts            # Wallet connection & authorization
 │   └── transaction.ts       # SOL transfers & transactions
 ├── apis/                    # API client functions
@@ -102,49 +100,38 @@ settle/frontend/
 ├── components/              # Reusable components
 │   ├── providers/           # React context providers
 │   └── hooks/               # Custom hooks
-├── constants/               # App constants
-│   └── wallet.ts            # Solana configuration
-└── utils/                   # Utility functions
+└── constants/               # App constants
+    └── wallet.ts            # Solana configuration
 ```
 
 ---
 
 ## Key Concepts
 
+### MWA Utility Library
+A unified hook (`useMWA()`) that provides all Mobile Wallet Adapter functionality in one import, replacing 3+ provider hooks and centralizing auth token caching, address conversion, and error handling.
+
+**Files:** [utils/mwa/](utils/mwa/) - See [utils/mwa/README.md](utils/mwa/README.md) for API documentation
+
 ### Wallet Connection
-Uses Mobile Wallet Adapter's `transact()` API to handle wallet authorization. Auth tokens are cached for silent reauthorization.
+Uses Mobile Wallet Adapter's `transact()` API with cached auth tokens for silent reauthorization, creating a web2-like UX while maintaining web3 security.
 
-**Why cache tokens?** Creates web2-like UX while maintaining web3 security. Users aren't prompted every time.
-
-**Files:** [solana/wallet.ts](solana/wallet.ts), [apis/auth.ts](apis/auth.ts)
+**Files:** [utils/mwa/useMWA.ts](utils/mwa/useMWA.ts), [utils/mwa/auth.ts](utils/mwa/auth.ts)
 
 ### Address Encoding
-Wallet adapter returns addresses in **base64**, but Solana uses **base58**. All addresses are converted to base58 before storing.
+Wallet adapter returns addresses in base64 format, which are automatically converted to Solana's base58 standard (no ambiguous characters, URL-safe, human-readable).
 
-**Why base58?** No ambiguous characters (0, O, I, l), URL-safe, human-readable. Blockchain standard.
-
-**Files:** [solana/wallet.ts](solana/wallet.ts) - `toBase58String()` helper
+**Files:** [utils/mwa/address.ts](utils/mwa/address.ts)
 
 ### Transaction Signing
-SOL payments with automatic USD-to-SOL conversion using CoinGecko API. Includes auto-reauthorization if auth token expires.
+SOL payments with automatic USD-to-SOL conversion using live CoinGecko prices. Includes auto-reauthorization and retry logic for expired auth tokens.
 
-**Flow:**
-1. Validate addresses
-2. Convert USD to SOL using live price
-3. Get recent blockhash
-4. Create transfer instruction
-5. Sign and send via wallet
-6. Wait for confirmation
-
-**Files:** [solana/transaction.ts](solana/transaction.ts)
+**Files:** [solana/transaction.ts](solana/transaction.ts), [utils/mwa/useMWA.ts](utils/mwa/useMWA.ts)
 
 ### Session Persistence
-Auth tokens are stored in AsyncStorage (**not** private keys). Private keys never leave the wallet app.
+Auth tokens are cached in AsyncStorage for seamless reauthorization across app restarts. Private keys never leave the wallet app—only revocable auth tokens and public addresses are stored.
 
-**What we store:** ✅ Auth token (revocable), ✅ Public address (not sensitive)
-**What we DON'T store:** ❌ Private keys, ❌ Seed phrases
-
-**Files:** [apis/auth.ts](apis/auth.ts)
+**Files:** [utils/mwa/auth.ts](utils/mwa/auth.ts)
 
 ---
 
@@ -159,7 +146,13 @@ Auth tokens are stored in AsyncStorage (**not** private keys). Private keys neve
 
 ### Error: "Non-base58 character"
 
-**Solution:** Address is in base64 format. Use `toBase58String()` helper in [solana/wallet.ts](solana/wallet.ts).
+**Solution:** Address is in base64 format. Use the `toBase58()` utility:
+```typescript
+import { toBase58 } from '@/utils/mwa';
+const base58Address = toBase58(address);
+```
+
+**Files:** [utils/mwa/address.ts](utils/mwa/address.ts)
 
 ### Error: "Transaction expired"
 
@@ -173,6 +166,7 @@ Auth tokens are stored in AsyncStorage (**not** private keys). Private keys neve
 
 ## Documentation
 
+- **[utils/mwa/README.md](utils/mwa/README.md)** - MWA Utility Library API reference
 - **[TECHNICAL-GUIDE.md](TECHNICAL-GUIDE.md)** - Comprehensive guide explaining all implementation details
 - **[Backend README](../backend/README.md)** - API server documentation
 
@@ -193,3 +187,5 @@ Auth tokens are stored in AsyncStorage (**not** private keys). Private keys neve
 ### Sample Apps
 - [Solana Mobile dApp Scaffold](https://github.com/solana-mobile/solana-mobile-dapp-scaffold)
 - [Mobile Wallet Adapter Example](https://github.com/solana-mobile/mobile-wallet-adapter/tree/main/examples)
+
+---

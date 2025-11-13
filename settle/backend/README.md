@@ -10,14 +10,14 @@ Express.js backend with SQLite3 database for the Settle app (Splitwise clone for
 
 ## Features
 
-- ✅ Wallet-based authentication (Solana public key)
-- ✅ Groups & expense management
-- ✅ Friend system
-- ✅ Balance calculation & settlements
-- ✅ Activity feed
-- ✅ Settings management
-- ✅ Group invitations
-- ✅ Search functionality
+- Wallet-based authentication (Solana public key)
+- Groups & expense management
+- Friend system
+- Balance calculation & settlements
+- Activity feed
+- Settings management
+- Group invitations
+- Search functionality
 
 ## Setup
 
@@ -48,6 +48,37 @@ npm run dev
 # Production
 npm start
 ```
+
+---
+
+## Project Structure
+
+```
+settle/backend/
+├── routes/                   # API route definitions
+│   ├── auth.js              # Authentication endpoints
+│   ├── users.js             # User management endpoints
+│   ├── groups.js            # Group management endpoints
+│   ├── expenses.js          # Expense management endpoints
+│   ├── friends.js           # Friend management endpoints
+│   ├── balances.js          # Balance calculation endpoints
+│   ├── activity.js          # Activity feed endpoints
+│   ├── settings.js          # Settings endpoints
+│   ├── invites.js           # Group invitation endpoints
+│   └── search.js            # Search endpoints
+├── middleware/              # Express middleware
+│   └── auth.js              # JWT authentication middleware
+├── database/                # Database setup
+│   ├── init.js              # Database initialization script
+│   └── seed.js              # Demo data seeding script
+├── utils/                   # Utility functions
+│   └── jwt.js               # JWT token utilities
+├── server.js                # Express app entry point
+├── settle.db                # SQLite database file (generated)
+└── package.json             # Dependencies and scripts
+```
+
+---
 
 ## API Endpoints
 
@@ -105,6 +136,30 @@ npm start
 - `GET /api/search/users` - Search users
 - `GET /api/search` - Unified search
 
+---
+
+## Key Concepts
+
+### Wallet-Based Authentication
+
+The backend uses Solana public keys as unique user identifiers instead of traditional username/password. When a user connects their wallet, the public key is used to look up or create an account, and a JWT token is issued for subsequent API requests.
+
+**Files:** [routes/auth.js](routes/auth.js), [middleware/auth.js](middleware/auth.js)
+
+### Balance Calculation
+
+Expenses are split among group members with flexible allocation. The backend calculates net balances between users, simplifying complex multi-party debts into direct pairwise settlements. For example, if Alice owes Bob $10 and Bob owes Alice $3, it's simplified to Alice owes Bob $7.
+
+**Files:** [routes/balances.js](routes/balances.js), [routes/expenses.js](routes/expenses.js)
+
+### Settlement Flow
+
+When users pay each other via SOL transfers, the frontend sends the transaction signature to the backend, which records the settlement and updates balances. The backend doesn't verify on-chain transactions but trusts the client to provide valid signatures for activity tracking.
+
+**Files:** [routes/balances.js](routes/balances.js)
+
+---
+
 ## Authentication Flow
 
 1. User connects wallet (provides public key)
@@ -148,6 +203,69 @@ EXPO_PUBLIC_API_URL=http://192.168.1.x:3000/api
 - Logs: Check console output
 - Reset database: `rm settle.db && npm run init-db`
 
-## License
+---
 
-MIT
+## Common Issues
+
+### Error: "Port 3000 already in use"
+
+**Solution:**
+1. Change the port in `.env` file: `PORT=3001`
+2. Update frontend `.env` to match: `EXPO_PUBLIC_API_URL=http://10.0.2.2:3001/api`
+3. Or kill the process using port 3000:
+```bash
+# Find process
+lsof -i :3000
+
+# Kill process
+kill -9 <PID>
+```
+
+### Error: "SQLITE_BUSY: database is locked"
+
+**Cause:** Multiple connections trying to write to SQLite simultaneously
+
+**Solution:**
+1. Close all other database connections
+2. Restart the server
+3. If persists, delete `settle.db` and reinitialize: `rm settle.db && npm run init-db`
+
+### CORS Errors from Frontend
+
+**Cause:** API URL misconfiguration or CORS headers not set
+
+**Solution:**
+1. Verify `EXPO_PUBLIC_API_URL` in `frontend/.env` matches your backend address
+2. For Android Emulator: `http://10.0.2.2:3000/api`
+3. For Physical Device: `http://<YOUR_COMPUTER_IP>:3000/api`
+4. Ensure backend has CORS enabled in `server.js`
+
+### JWT Token Expired
+
+**Solution:** Frontend will automatically refresh by reconnecting wallet. Users just need to authorize again in their wallet app.
+
+---
+
+## Documentation
+
+- **[Root README](../README.md)** - App overview and screenshots
+- **[Frontend README](../frontend/README.md)** - React Native app documentation
+- **[Frontend TECHNICAL-GUIDE](../frontend/TECHNICAL-GUIDE.md)** - Web3 integration deep dive
+
+---
+
+## Resources
+
+### Official Documentation
+- [Express.js Docs](https://expressjs.com/)
+- [SQLite3 Docs](https://www.sqlite.org/docs.html)
+- [JWT.io](https://jwt.io/)
+- [Node.js Best Practices](https://github.com/goldbergyoni/nodebestpractices)
+
+### Developer Tools
+- [Postman](https://www.postman.com/) - API testing
+- [DB Browser for SQLite](https://sqlitebrowser.org/) - Database viewer
+- [Nodemon](https://nodemon.io/) - Auto-restart on file changes
+
+---
+

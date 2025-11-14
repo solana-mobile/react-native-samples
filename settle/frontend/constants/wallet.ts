@@ -9,7 +9,7 @@ export const APP_IDENTITY = {
 };
 
 // Valid cluster values: 'devnet', 'testnet', 'mainnet-beta'
-export const SOLANA_CLUSTER = 'devnet' as const;
+export const SOLANA_CLUSTER = (process.env.EXPO_PUBLIC_SOLANA_CLUSTER || 'devnet') as 'devnet' | 'testnet' | 'mainnet-beta';
 
-// For mainnet, use: 'mainnet-beta'
-// export const SOLANA_CLUSTER = 'mainnet-beta' as const;
+// Solana RPC endpoint
+export const SOLANA_RPC_ENDPOINT = process.env.EXPO_PUBLIC_SOLANA_RPC_ENDPOINT || 'https://api.devnet.solana.com';

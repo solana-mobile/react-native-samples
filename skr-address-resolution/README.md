@@ -8,17 +8,13 @@
 
 ## Screenshots & Demo
 
-**Sign In**
+| Sign In | Wallet Popup | Domain Lookup | Address Lookup |
+|:---:|:---:|:---:|:---:|
+| <img width="180" alt="signin" src="https://github.com/user-attachments/assets/d2f31f64-127e-4a3c-80ac-d01ea4588d8f" /> | <img width="180" alt="wallet popup" src="https://github.com/user-attachments/assets/db412fb7-7c75-4243-98fe-abfb713fea5c" /> | <img width="180" alt="domain lookup" src="https://github.com/user-attachments/assets/46cee9c0-4ae7-412d-b978-d902437d95e7" /> | <img width="180" alt="address lookup" src="https://github.com/user-attachments/assets/d0cf991e-5364-43d8-a152-71bd0cf609f3" /> |
 
-| Sign In Screen |
-|---|
-| ![Sign In](./screenshots/sign-in.png) |
-
-**Main Features**
-
-| Domain Lookup | Address Lookup | Results |
-|---|---|---|
-| ![Domain Lookup](./screenshots/domain.png) | ![Address Lookup](./screenshots/address.png) | ![Results](./screenshots/results.png) |
+| No .skr Domain | With .skr Domain |
+|:---:|:---:|
+| <img width="180" alt="No skr" src="https://github.com/user-attachments/assets/17192072-21ac-43aa-b9d8-3f9a94fa4a50" /> | <img width="180" alt="Yes skr" src="https://github.com/user-attachments/assets/5e7f9133-ea2d-4c5e-9711-683a3082fcfb" /> |
 
 **Key Features:**
 - Personalized welcome with user's .skr domain or truncated wallet address

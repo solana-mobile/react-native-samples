@@ -23,6 +23,7 @@ interface UserData {
   name: string;
   phone: string;
   pubkey?: string;
+  skr_domain?: string;
 }
 
 export default function AccountScreen() {
@@ -103,7 +104,9 @@ export default function AccountScreen() {
               <MaterialIcons name="person" size={24} color={colors.icon} />
               <View style={styles.infoTextContainer}>
                 <Text style={[styles.infoLabel, { color: colors.icon }]}>Name</Text>
-                <Text style={[styles.infoValue, { color: colors.text }]}>{userData?.name || 'N/A'}</Text>
+                <Text style={[styles.infoValue, { color: colors.text }]}>
+                  {userData?.name || 'N/A'}
+                </Text>
               </View>
             </View>
 
@@ -122,9 +125,9 @@ export default function AccountScreen() {
             <View style={styles.infoRow}>
               <MaterialIcons name="account-balance-wallet" size={24} color={colors.icon} />
               <View style={styles.infoTextContainer}>
-                <Text style={[styles.infoLabel, { color: colors.icon }]}>Wallet Address</Text>
+                <Text style={[styles.infoLabel, { color: colors.icon }]}>Wallet</Text>
                 <Text style={[styles.pubkeyValue, { color: colors.text }]} numberOfLines={1} ellipsizeMode="middle">
-                  {authorization?.selectedAccount?.address || 'Not connected'}
+                  {userData?.skr_domain || authorization?.selectedAccount?.address || 'Not connected'}
                 </Text>
               </View>
             </View>

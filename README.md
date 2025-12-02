@@ -9,6 +9,7 @@ For feedback and suggestions, please open an issue on this repository.
 | Sample | Description |
 | ------ | ----------- |
 | **Settle** <br><br>[> Browse](/settle) | Expenses splitting app showcasing functionality to connect wallet and repay debts with transfer transactions <br><br>• Beginner friendly<br>• Connect wallet<br>• Send and View Transactions|
+| **skr address resolution** <br><br>[> Browse](/skr-address-resolution) | Application to showcase bidirectional domain lookup <br><br>• Beginner friendly<br>• Connect wallet<br>• Domain to address lookup aka example.skr → wallet address<br>• Address to domain reverse lookup aka wallet address → example.skr|
 
 ## 🛠️ Prerequisites
 

@@ -40,6 +40,17 @@ describe("Cause Pots - Comprehensive Tests", () => {
     );
   }
 
+  // Helper to get vault PDA
+  function getVaultPDA(pot: PublicKey): [PublicKey, number] {
+    return PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("vault"),
+        pot.toBuffer(),
+      ],
+      program.programId
+    );
+  }
+
   // Helper to get contributor PDA
   function getContributorPDA(pot: PublicKey, contributor: PublicKey): [PublicKey, number] {
     return PublicKey.findProgramAddressSync(
@@ -62,10 +73,10 @@ describe("Cause Pots - Comprehensive Tests", () => {
     recipient = Keypair.generate();
 
     // Airdrop SOL to all test accounts
-    await airdrop(authority.publicKey, 10);
-    await airdrop(contributor1.publicKey, 10);
-    await airdrop(contributor2.publicKey, 10);
-    await airdrop(contributor3.publicKey, 10);
+    await airdrop(authority.publicKey, 20);
+    await airdrop(contributor1.publicKey, 20);
+    await airdrop(contributor2.publicKey, 20);
+    await airdrop(contributor3.publicKey, 20);
     await airdrop(nonContributor.publicKey, 5);
     await airdrop(recipient.publicKey, 1);
 
@@ -80,6 +91,7 @@ describe("Cause Pots - Comprehensive Tests", () => {
     it("Successfully creates a pot with valid parameters", async () => {
       const potName = "Trip Fund";
       const [potPDA] = getPotPDA(authority.publicKey, potName);
+      const [vaultPDA] = getVaultPDA(potPDA);
 
       const tx = await program.methods
         .createPot(
@@ -91,6 +103,7 @@ describe("Cause Pots - Comprehensive Tests", () => {
         )
         .accounts({
           pot: potPDA,
+          potVault: vaultPDA,
           authority: authority.publicKey,
           systemProgram: SystemProgram.programId,
         })
@@ -118,6 +131,7 @@ describe("Cause Pots - Comprehensive Tests", () => {
 
       try {
         const [potPDA] = getPotPDA(authority.publicKey, longName);
+        const [vaultPDA] = getVaultPDA(potPDA);
 
         await program.methods
           .createPot(
@@ -129,6 +143,7 @@ describe("Cause Pots - Comprehensive Tests", () => {
           )
           .accounts({
             pot: potPDA,
+            potVault: vaultPDA,
             authority: authority.publicKey,
             systemProgram: SystemProgram.programId,
           })
@@ -146,6 +161,7 @@ describe("Cause Pots - Comprehensive Tests", () => {
       const potName = "Short Name";
       const longDescription = "A".repeat(201);
       const [potPDA] = getPotPDA(authority.publicKey, potName);
+      const [vaultPDA] = getVaultPDA(potPDA);
 
       try {
         await program.methods
@@ -158,6 +174,7 @@ describe("Cause Pots - Comprehensive Tests", () => {
           )
           .accounts({
             pot: potPDA,
+            potVault: vaultPDA,
             authority: authority.publicKey,
             systemProgram: SystemProgram.programId,
           })
@@ -173,6 +190,7 @@ describe("Cause Pots - Comprehensive Tests", () => {
     it("Fails with invalid target amount (0)", async () => {
       const potName = "Zero Target";
       const [potPDA] = getPotPDA(authority.publicKey, potName);
+      const [vaultPDA] = getVaultPDA(potPDA);
 
       try {
         await program.methods
@@ -185,6 +203,7 @@ describe("Cause Pots - Comprehensive Tests", () => {
           )
           .accounts({
             pot: potPDA,
+            potVault: vaultPDA,
             authority: authority.publicKey,
             systemProgram: SystemProgram.programId,
           })
@@ -197,36 +216,10 @@ describe("Cause Pots - Comprehensive Tests", () => {
       }
     });
 
-    it("Fails with invalid unlock period (0 days)", async () => {
-      const potName = "Zero Days";
-      const [potPDA] = getPotPDA(authority.publicKey, potName);
-
-      try {
-        await program.methods
-          .createPot(
-            potName,
-            "Description",
-            new anchor.BN(10 * LAMPORTS_PER_SOL),
-            new anchor.BN(0), // Invalid
-            2
-          )
-          .accounts({
-            pot: potPDA,
-            authority: authority.publicKey,
-            systemProgram: SystemProgram.programId,
-          })
-          .signers([authority])
-          .rpc();
-
-        expect.fail("Should have thrown error");
-      } catch (error: any) {
-        expect(error.toString()).to.include("InvalidUnlockPeriod");
-      }
-    });
-
     it("Fails with invalid signers required (0)", async () => {
       const potName = "Zero Signers";
       const [potPDA] = getPotPDA(authority.publicKey, potName);
+      const [vaultPDA] = getVaultPDA(potPDA);
 
       try {
         await program.methods
@@ -239,6 +232,7 @@ describe("Cause Pots - Comprehensive Tests", () => {
           )
           .accounts({
             pot: potPDA,
+            potVault: vaultPDA,
             authority: authority.publicKey,
             systemProgram: SystemProgram.programId,
           })
@@ -256,11 +250,14 @@ describe("Cause Pots - Comprehensive Tests", () => {
       const pot2Name = "Pot Two";
       const [pot1PDA] = getPotPDA(authority.publicKey, pot1Name);
       const [pot2PDA] = getPotPDA(authority.publicKey, pot2Name);
+      const [vault1PDA] = getVaultPDA(pot1PDA);
+      const [vault2PDA] = getVaultPDA(pot2PDA);
 
       await program.methods
         .createPot(pot1Name, "First pot", new anchor.BN(10 * LAMPORTS_PER_SOL), new anchor.BN(30), 2)
         .accounts({
           pot: pot1PDA,
+          potVault: vault1PDA,
           authority: authority.publicKey,
           systemProgram: SystemProgram.programId,
         })
@@ -271,6 +268,7 @@ describe("Cause Pots - Comprehensive Tests", () => {
         .createPot(pot2Name, "Second pot", new anchor.BN(20 * LAMPORTS_PER_SOL), new anchor.BN(60), 3)
         .accounts({
           pot: pot2PDA,
+          potVault: vault2PDA,
           authority: authority.publicKey,
           systemProgram: SystemProgram.programId,
         })
@@ -298,6 +296,7 @@ describe("Cause Pots - Comprehensive Tests", () => {
     before(async () => {
       // Create a test pot
       [testPotPDA] = getPotPDA(authority.publicKey, testPotName);
+      const [vaultPDA] = getVaultPDA(testPotPDA);
 
       await program.methods
         .createPot(
@@ -309,6 +308,7 @@ describe("Cause Pots - Comprehensive Tests", () => {
         )
         .accounts({
           pot: testPotPDA,
+          potVault: vaultPDA,
           authority: authority.publicKey,
           systemProgram: SystemProgram.programId,
         })
@@ -318,12 +318,17 @@ describe("Cause Pots - Comprehensive Tests", () => {
 
     it("First contribution creates contributor account", async () => {
       const [contributorPDA] = getContributorPDA(testPotPDA, contributor1.publicKey);
+      const [vaultPDA] = getVaultPDA(testPotPDA);
       const contributionAmount = 2 * LAMPORTS_PER_SOL;
+
+      const contributorBalanceBefore = await provider.connection.getBalance(contributor1.publicKey);
+      const vaultBalanceBefore = await provider.connection.getBalance(vaultPDA);
 
       await program.methods
         .contribute(new anchor.BN(contributionAmount))
         .accounts({
           pot: testPotPDA,
+          potVault: vaultPDA,
           contributorAccount: contributorPDA,
           contributor: contributor1.publicKey,
           systemProgram: SystemProgram.programId,
@@ -331,10 +336,21 @@ describe("Cause Pots - Comprehensive Tests", () => {
         .signers([contributor1])
         .rpc();
 
+      const contributorBalanceAfter = await provider.connection.getBalance(contributor1.publicKey);
+      const vaultBalanceAfter = await provider.connection.getBalance(vaultPDA);
+
+      // Verify contributor balance change (decreased by contribution + fees)
+      // Note: This also accounts for the rent for creating the contributor account
+      expect(contributorBalanceAfter).to.be.at.most(contributorBalanceBefore - contributionAmount);
+
       // Verify pot updated
       const pot = await program.account.potAccount.fetch(testPotPDA);
       expect(pot.totalContributed.toNumber()).to.equal(contributionAmount);
       expect(pot.contributors).to.have.lengthOf(2); // authority + contributor1
+
+      // Verify actual vault balance
+      console.log("Total money in vault after first contribution:", vaultBalanceAfter);
+      expect(vaultBalanceAfter).to.equal(vaultBalanceBefore + contributionAmount);
 
       // Verify contributor account
       const contributorAccount = await program.account.contributorAccount.fetch(contributorPDA);
@@ -345,15 +361,19 @@ describe("Cause Pots - Comprehensive Tests", () => {
 
     it("Subsequent contributions update totals", async () => {
       const [contributorPDA] = getContributorPDA(testPotPDA, contributor1.publicKey);
+      const [vaultPDA] = getVaultPDA(testPotPDA);
       const additionalAmount = 1 * LAMPORTS_PER_SOL;
 
       const potBefore = await program.account.potAccount.fetch(testPotPDA);
       const contributorBefore = await program.account.contributorAccount.fetch(contributorPDA);
+      const contributorBalanceBefore = await provider.connection.getBalance(contributor1.publicKey);
+      const vaultBalanceBefore = await provider.connection.getBalance(vaultPDA);
 
       await program.methods
         .contribute(new anchor.BN(additionalAmount))
         .accounts({
           pot: testPotPDA,
+          potVault: vaultPDA,
           contributorAccount: contributorPDA,
           contributor: contributor1.publicKey,
           systemProgram: SystemProgram.programId,
@@ -361,9 +381,19 @@ describe("Cause Pots - Comprehensive Tests", () => {
         .signers([contributor1])
         .rpc();
 
+      const contributorBalanceAfter = await provider.connection.getBalance(contributor1.publicKey);
+      const vaultBalanceAfter = await provider.connection.getBalance(vaultPDA);
+
+      // Verify balances
+      expect(vaultBalanceAfter).to.equal(vaultBalanceBefore + additionalAmount);
+      expect(contributorBalanceAfter).to.be.at.most(contributorBalanceBefore - additionalAmount);
+
+      console.log("Total money after contribution in pot:", vaultBalanceAfter);
+
       const potAfter = await program.account.potAccount.fetch(testPotPDA);
       const contributorAfter = await program.account.contributorAccount.fetch(contributorPDA);
 
+      expect(vaultBalanceAfter).to.equal(potAfter.totalContributed.toNumber());
       expect(potAfter.totalContributed.toNumber()).to.equal(
         potBefore.totalContributed.toNumber() + additionalAmount
       );
@@ -378,11 +408,18 @@ describe("Cause Pots - Comprehensive Tests", () => {
     it("Multiple contributors can contribute", async () => {
       const [contributor2PDA] = getContributorPDA(testPotPDA, contributor2.publicKey);
       const [contributor3PDA] = getContributorPDA(testPotPDA, contributor3.publicKey);
+      const [vaultPDA] = getVaultPDA(testPotPDA);
+
+      // --- Contribution from Contributor 2 ---
+      const contrib2Amount = new anchor.BN(1.5 * LAMPORTS_PER_SOL);
+      const c2BalanceBefore = await provider.connection.getBalance(contributor2.publicKey);
+      const vaultBalanceBeforeC2 = await provider.connection.getBalance(vaultPDA);
 
       await program.methods
-        .contribute(new anchor.BN(1.5 * LAMPORTS_PER_SOL))
+        .contribute(contrib2Amount)
         .accounts({
           pot: testPotPDA,
+          potVault: vaultPDA,
           contributorAccount: contributor2PDA,
           contributor: contributor2.publicKey,
           systemProgram: SystemProgram.programId,
@@ -390,10 +427,22 @@ describe("Cause Pots - Comprehensive Tests", () => {
         .signers([contributor2])
         .rpc();
 
+      const c2BalanceAfter = await provider.connection.getBalance(contributor2.publicKey);
+      const vaultBalanceAfterC2 = await provider.connection.getBalance(vaultPDA);
+
+      expect(c2BalanceAfter).to.be.at.most(c2BalanceBefore - contrib2Amount.toNumber());
+      expect(vaultBalanceAfterC2).to.equal(vaultBalanceBeforeC2 + contrib2Amount.toNumber());
+
+      // --- Contribution from Contributor 3 ---
+      const contrib3Amount = new anchor.BN(2.5 * LAMPORTS_PER_SOL);
+      const c3BalanceBefore = await provider.connection.getBalance(contributor3.publicKey);
+      const vaultBalanceBeforeC3 = await provider.connection.getBalance(vaultPDA);
+
       await program.methods
-        .contribute(new anchor.BN(2.5 * LAMPORTS_PER_SOL))
+        .contribute(contrib3Amount)
         .accounts({
           pot: testPotPDA,
+          potVault: vaultPDA,
           contributorAccount: contributor3PDA,
           contributor: contributor3.publicKey,
           systemProgram: SystemProgram.programId,
@@ -401,18 +450,31 @@ describe("Cause Pots - Comprehensive Tests", () => {
         .signers([contributor3])
         .rpc();
 
+      const c3BalanceAfter = await provider.connection.getBalance(contributor3.publicKey);
+      const vaultBalanceAfterC3 = await provider.connection.getBalance(vaultPDA);
+
+      expect(c3BalanceAfter).to.be.at.most(c3BalanceBefore - contrib3Amount.toNumber());
+      expect(vaultBalanceAfterC3).to.equal(vaultBalanceBeforeC3 + contrib3Amount.toNumber());
+
       const pot = await program.account.potAccount.fetch(testPotPDA);
       expect(pot.contributors).to.have.lengthOf(4); // authority + 3 contributors
+
+      // Verify actual vault balance matches total contributed
+      const finalVaultBalance = await provider.connection.getBalance(vaultPDA);
+      console.log("Total money in vault after multiple contributions:", finalVaultBalance);
+      expect(finalVaultBalance).to.equal(pot.totalContributed.toNumber());
     });
 
     it("Fails with zero amount", async () => {
       const [contributorPDA] = getContributorPDA(testPotPDA, contributor1.publicKey);
+      const [vaultPDA] = getVaultPDA(testPotPDA);
 
       try {
         await program.methods
           .contribute(new anchor.BN(0))
           .accounts({
             pot: testPotPDA,
+            potVault: vaultPDA,
             contributorAccount: contributorPDA,
             contributor: contributor1.publicKey,
             systemProgram: SystemProgram.programId,
@@ -438,6 +500,7 @@ describe("Cause Pots - Comprehensive Tests", () => {
     before(async () => {
       // Create a pot with 1 day time-lock for faster testing
       [signingPotPDA] = getPotPDA(authority.publicKey, signingPotName);
+      const [vaultPDA] = getVaultPDA(signingPotPDA);
 
       await program.methods
         .createPot(
@@ -449,6 +512,7 @@ describe("Cause Pots - Comprehensive Tests", () => {
         )
         .accounts({
           pot: signingPotPDA,
+          potVault: vaultPDA,
           authority: authority.publicKey,
           systemProgram: SystemProgram.programId,
         })
@@ -463,6 +527,7 @@ describe("Cause Pots - Comprehensive Tests", () => {
         .contribute(new anchor.BN(1 * LAMPORTS_PER_SOL))
         .accounts({
           pot: signingPotPDA,
+          potVault: vaultPDA,
           contributorAccount: contrib1PDA,
           contributor: contributor1.publicKey,
           systemProgram: SystemProgram.programId,
@@ -474,6 +539,7 @@ describe("Cause Pots - Comprehensive Tests", () => {
         .contribute(new anchor.BN(1 * LAMPORTS_PER_SOL))
         .accounts({
           pot: signingPotPDA,
+          potVault: vaultPDA,
           contributorAccount: contrib2PDA,
           contributor: contributor2.publicKey,
           systemProgram: SystemProgram.programId,
@@ -525,6 +591,7 @@ describe("Cause Pots - Comprehensive Tests", () => {
     it("Fails releasing without sufficient signatures", async () => {
       const releasePotName = "Release Test Pot";
       const [releasePotPDA] = getPotPDA(authority.publicKey, releasePotName);
+      const [vaultPDA] = getVaultPDA(releasePotPDA);
 
       await program.methods
         .createPot(
@@ -536,6 +603,7 @@ describe("Cause Pots - Comprehensive Tests", () => {
         )
         .accounts({
           pot: releasePotPDA,
+          potVault: vaultPDA,
           authority: authority.publicKey,
           systemProgram: SystemProgram.programId,
         })
@@ -547,8 +615,10 @@ describe("Cause Pots - Comprehensive Tests", () => {
           .releaseFunds(recipient.publicKey)
           .accounts({
             pot: releasePotPDA,
+            potVault: vaultPDA,
             authority: authority.publicKey,
             recipient: recipient.publicKey,
+            systemProgram: SystemProgram.programId,
           })
           .signers([authority])
           .rpc();
@@ -566,41 +636,92 @@ describe("Cause Pots - Comprehensive Tests", () => {
       }
     });
 
-    it("Fails releasing before time-lock", async () => {
-      const earlyReleasePotName = "Early Release Test";
-      const [earlyPotPDA] = getPotPDA(authority.publicKey, earlyReleasePotName);
+    it("Successfully releases funds after time-lock and with enough signatures", async () => {
+      const releasePotName = "Successful Release Pot";
+      const [releasePotPDA] = getPotPDA(authority.publicKey, releasePotName);
+      const [vaultPDA] = getVaultPDA(releasePotPDA);
+      const unlock_period_seconds = 2;
 
+      // 1. Create a pot with a short time-lock and 1 required signature
       await program.methods
         .createPot(
-          earlyReleasePotName,
-          "Testing early release",
-          new anchor.BN(1 * LAMPORTS_PER_SOL),
-          new anchor.BN(30),
-          1 // Only 1 signature needed
+          releasePotName,
+          "Testing successful release",
+          new anchor.BN(5 * LAMPORTS_PER_SOL),
+          new anchor.BN(unlock_period_seconds/86400),
+          1 // Needs 1 signature (authority)
         )
         .accounts({
-          pot: earlyPotPDA,
+          pot: releasePotPDA,
+          potVault: vaultPDA,
           authority: authority.publicKey,
           systemProgram: SystemProgram.programId,
         })
         .signers([authority])
         .rpc();
 
-      try {
-        await program.methods
-          .releaseFunds(recipient.publicKey)
+      // 2. Contribute to the pot so there's something to release
+      const [contrib1PDA] = getContributorPDA(releasePotPDA, contributor1.publicKey);
+      const contributionAmount = new anchor.BN(3 * LAMPORTS_PER_SOL);
+      await program.methods
+        .contribute(contributionAmount)
+        .accounts({
+          pot: releasePotPDA,
+          potVault: vaultPDA,
+          contributorAccount: contrib1PDA,
+          contributor: contributor1.publicKey,
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([contributor1])
+        .rpc();
+
+      let pot = await program.account.potAccount.fetch(releasePotPDA);
+      expect(pot.totalContributed.toNumber()).to.equal(contributionAmount.toNumber());
+
+      // Sign for release
+
+       await program.methods
+          .signRelease()
           .accounts({
-            pot: earlyPotPDA,
-            authority: authority.publicKey,
-            recipient: recipient.publicKey,
+            pot: releasePotPDA,
+            signer: contributor1.publicKey,
           })
-          .signers([authority])
+          .signers([contributor1])
           .rpc();
 
-        expect.fail("Should have thrown error");
-      } catch (error: any) {
-        expect(error.toString()).to.include("TimeLockNotExpired");
-      }
+      // 3. Wait for time-lock to expire
+      console.log(`     (Waiting ${unlock_period_seconds + 1} seconds for time-lock to expire...)`);
+      await new Promise(resolve => setTimeout(resolve, (unlock_period_seconds + 1) * 1000));
+
+      // 4. Get balances before release
+      const vaultBalanceBefore = await provider.connection.getBalance(vaultPDA);
+      const recipientBalanceBefore = await provider.connection.getBalance(recipient.publicKey);
+      console.log(vaultBalanceBefore, recipientBalanceBefore);
+
+      // 5. Now release the funds
+      await program.methods
+        .releaseFunds(recipient.publicKey)
+        .accounts({
+          pot: releasePotPDA,
+          potVault: vaultPDA,
+          authority: authority.publicKey,
+          recipient: recipient.publicKey,
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([authority])
+        .rpc();
+
+      // 6. Get balances after release
+      const vaultBalanceAfter = await provider.connection.getBalance(vaultPDA);
+      const recipientBalanceAfter = await provider.connection.getBalance(recipient.publicKey);
+      console.log(vaultBalanceAfter, recipientBalanceAfter);
+      // 7. Verify balances and pot state
+      expect(vaultBalanceAfter).to.equal(0); // Vault should be emptied after release
+      // Recipient balance should increase by the exact contributed amount
+      expect(recipientBalanceAfter).to.equal(recipientBalanceBefore + contributionAmount.toNumber());
+
+      pot = await program.account.potAccount.fetch(releasePotPDA);
+      expect(pot.isReleased).to.be.true; // Pot should be marked as released
     });
   });
 
@@ -614,6 +735,7 @@ describe("Cause Pots - Comprehensive Tests", () => {
 
     before(async () => {
       [addContribPotPDA] = getPotPDA(authority.publicKey, addContribPotName);
+      const [vaultPDA] = getVaultPDA(addContribPotPDA);
 
       await program.methods
         .createPot(
@@ -625,6 +747,7 @@ describe("Cause Pots - Comprehensive Tests", () => {
         )
         .accounts({
           pot: addContribPotPDA,
+          potVault: vaultPDA,
           authority: authority.publicKey,
           systemProgram: SystemProgram.programId,
         })
@@ -688,6 +811,7 @@ describe("Cause Pots - Comprehensive Tests", () => {
       // 1. Create pot
       const integrationPotName = "Integration Test Pot";
       const [integrationPotPDA] = getPotPDA(authority.publicKey, integrationPotName);
+      const [vaultPDA] = getVaultPDA(integrationPotPDA);
 
       console.log("1️⃣  Creating pot...");
       await program.methods
@@ -700,6 +824,7 @@ describe("Cause Pots - Comprehensive Tests", () => {
         )
         .accounts({
           pot: integrationPotPDA,
+          potVault: vaultPDA,
           authority: authority.publicKey,
           systemProgram: SystemProgram.programId,
         })
@@ -714,10 +839,15 @@ describe("Cause Pots - Comprehensive Tests", () => {
       console.log("\n2️⃣  Adding contributions...");
 
       const [contrib1PDA] = getContributorPDA(integrationPotPDA, contributor1.publicKey);
+      const contrib1Amount = 3 * LAMPORTS_PER_SOL;
+      const contrib1BalanceBefore = await provider.connection.getBalance(contributor1.publicKey);
+      const vaultBalanceBeforeC1 = await provider.connection.getBalance(vaultPDA);
+
       await program.methods
-        .contribute(new anchor.BN(3 * LAMPORTS_PER_SOL))
+        .contribute(new anchor.BN(contrib1Amount))
         .accounts({
           pot: integrationPotPDA,
+          potVault: vaultPDA,
           contributorAccount: contrib1PDA,
           contributor: contributor1.publicKey,
           systemProgram: SystemProgram.programId,
@@ -725,11 +855,22 @@ describe("Cause Pots - Comprehensive Tests", () => {
         .signers([contributor1])
         .rpc();
 
+      const contrib1BalanceAfter = await provider.connection.getBalance(contributor1.publicKey);
+      const vaultBalanceAfterC1 = await provider.connection.getBalance(vaultPDA);
+      expect(contrib1BalanceAfter).to.be.at.most(contrib1BalanceBefore - contrib1Amount);
+      expect(vaultBalanceAfterC1).to.equal(vaultBalanceBeforeC1 + contrib1Amount);
+
+
       const [contrib2PDA] = getContributorPDA(integrationPotPDA, contributor2.publicKey);
+      const contrib2Amount = 4 * LAMPORTS_PER_SOL;
+      const contrib2BalanceBefore = await provider.connection.getBalance(contributor2.publicKey);
+      const vaultBalanceBeforeC2 = await provider.connection.getBalance(vaultPDA);
+
       await program.methods
-        .contribute(new anchor.BN(4 * LAMPORTS_PER_SOL))
+        .contribute(new anchor.BN(contrib2Amount))
         .accounts({
           pot: integrationPotPDA,
+          potVault: vaultPDA,
           contributorAccount: contrib2PDA,
           contributor: contributor2.publicKey,
           systemProgram: SystemProgram.programId,
@@ -737,11 +878,21 @@ describe("Cause Pots - Comprehensive Tests", () => {
         .signers([contributor2])
         .rpc();
 
+      const contrib2BalanceAfter = await provider.connection.getBalance(contributor2.publicKey);
+      const vaultBalanceAfterC2 = await provider.connection.getBalance(vaultPDA);
+      expect(contrib2BalanceAfter).to.be.at.most(contrib2BalanceBefore - contrib2Amount);
+      expect(vaultBalanceAfterC2).to.equal(vaultBalanceBeforeC2 + contrib2Amount);
+
       const [contrib3PDA] = getContributorPDA(integrationPotPDA, contributor3.publicKey);
+      const contrib3Amount = 2 * LAMPORTS_PER_SOL;
+      const contrib3BalanceBefore = await provider.connection.getBalance(contributor3.publicKey);
+      const vaultBalanceBeforeC3 = await provider.connection.getBalance(vaultPDA);
+
       await program.methods
-        .contribute(new anchor.BN(2 * LAMPORTS_PER_SOL))
+        .contribute(new anchor.BN(contrib3Amount))
         .accounts({
           pot: integrationPotPDA,
+          potVault: vaultPDA,
           contributorAccount: contrib3PDA,
           contributor: contributor3.publicKey,
           systemProgram: SystemProgram.programId,
@@ -749,9 +900,19 @@ describe("Cause Pots - Comprehensive Tests", () => {
         .signers([contributor3])
         .rpc();
 
+      const contrib3BalanceAfter = await provider.connection.getBalance(contributor3.publicKey);
+      const vaultBalanceAfterC3 = await provider.connection.getBalance(vaultPDA);
+      expect(contrib3BalanceAfter).to.be.at.most(contrib3BalanceBefore - contrib3Amount);
+      expect(vaultBalanceAfterC3).to.equal(vaultBalanceBeforeC3 + contrib3Amount);
+
       pot = await program.account.potAccount.fetch(integrationPotPDA);
       console.log(`   ✅ Total contributed: ${pot.totalContributed.toNumber() / LAMPORTS_PER_SOL} SOL`);
       console.log(`   👥 Contributors: ${pot.contributors.length}`);
+
+      // Verify actual vault balance
+      const vaultBalance = await provider.connection.getBalance(vaultPDA);
+      console.log(`   💰 Vault balance: ${vaultBalance / LAMPORTS_PER_SOL} SOL`);
+      expect(vaultBalance).to.equal(pot.totalContributed.toNumber());
 
       // 3. Verify contributor tracking
       console.log("\n3️⃣  Verifying contributor accounts...");

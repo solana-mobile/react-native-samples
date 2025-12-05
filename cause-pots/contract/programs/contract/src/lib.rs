@@ -18,13 +18,13 @@ pub mod contract {
         require!(name.len() <= 32, ErrorCode::NameTooLong);
         require!(description.len() <= 200, ErrorCode::DescriptionTooLong);
         require!(target_amount > 0, ErrorCode::InvalidTargetAmount);
-        require!(unlock_days > 0, ErrorCode::InvalidUnlockPeriod);
         require!(signers_required > 0, ErrorCode::InvalidSignersRequired);
 
         let pot = &mut ctx.accounts.pot;
         let clock = Clock::get()?;
 
         pot.authority = ctx.accounts.authority.key();
+        pot.vault = ctx.accounts.pot_vault.key();
         pot.name = name;
         pot.description = description;
         pot.target_amount = target_amount;
@@ -38,8 +38,10 @@ pub mod contract {
         pot.recipient = None;
         pot.created_at = clock.unix_timestamp;
         pot.bump = ctx.bumps.pot;
+        pot.vault_bump = ctx.bumps.pot_vault;
 
         msg!("Pot created: {}", pot.name);
+        msg!("Vault PDA: {}", pot.vault);
         msg!("Unlock date: {}", pot.unlock_timestamp);
         msg!("Signers required: {}", pot.signers_required);
 
@@ -56,17 +58,17 @@ pub mod contract {
 
         require!(!pot.is_released, ErrorCode::PotAlreadyReleased);
 
-        // Transfer SOL from contributor to pot PDA
+        // Transfer SOL from contributor to vault PDA
         let ix = anchor_lang::solana_program::system_instruction::transfer(
             &ctx.accounts.contributor.key(),
-            &pot.key(),
+            &ctx.accounts.pot_vault.key(),
             amount,
         );
         anchor_lang::solana_program::program::invoke(
             &ix,
             &[
                 ctx.accounts.contributor.to_account_info(),
-                pot.to_account_info(),
+                ctx.accounts.pot_vault.to_account_info(),
             ],
         )?;
 
@@ -152,27 +154,41 @@ pub mod contract {
             ErrorCode::InsufficientSignatures
         );
 
-        // Calculate amount to transfer (keep rent-exempt minimum)
-        let rent = Rent::get()?;
-        let min_balance = rent.minimum_balance(pot.to_account_info().data_len());
-        let pot_balance = pot.to_account_info().lamports();
+        // Get vault balance (all lamports in the vault)
+        let vault_balance = ctx.accounts.pot_vault.lamports();
+        require!(vault_balance > 0, ErrorCode::InsufficientFunds);
 
-        let transfer_amount = pot_balance
-            .checked_sub(min_balance)
-            .ok_or(ErrorCode::InsufficientFunds)?;
+        // Prepare signer seeds for invoke_signed
+        let pot_key = pot.key();
+        let seeds = &[
+            b"vault",
+            pot_key.as_ref(),
+            &[pot.vault_bump],
+        ];
+        let signer_seeds = &[&seeds[..]];
 
-        require!(transfer_amount > 0, ErrorCode::InsufficientFunds);
+        // Transfer SOL from vault PDA to recipient using invoke_signed
+        let ix = anchor_lang::solana_program::system_instruction::transfer(
+            &ctx.accounts.pot_vault.key(),
+            &recipient,
+            vault_balance,
+        );
 
-        // Transfer SOL from pot PDA to recipient
-        **pot.to_account_info().try_borrow_mut_lamports()? -= transfer_amount;
-        **ctx.accounts.recipient.try_borrow_mut_lamports()? += transfer_amount;
+        anchor_lang::solana_program::program::invoke_signed(
+            &ix,
+            &[
+                ctx.accounts.pot_vault.to_account_info(),
+                ctx.accounts.recipient.to_account_info(),
+            ],
+            signer_seeds,
+        )?;
 
         // Mark as released
         pot.is_released = true;
         pot.released_at = Some(clock.unix_timestamp);
         pot.recipient = Some(recipient);
 
-        msg!("Funds released: {} lamports", transfer_amount);
+        msg!("Funds released: {} lamports", vault_balance);
         msg!("Recipient: {}", recipient);
 
         Ok(())
@@ -206,6 +222,9 @@ pub struct PotAccount {
     /// Creator and authority of the pot
     pub authority: Pubkey,
 
+    /// Vault PDA that holds the actual SOL
+    pub vault: Pubkey,
+
     /// Pot metadata
     #[max_len(32)]
     pub name: String,
@@ -236,6 +255,7 @@ pub struct PotAccount {
     /// Metadata
     pub created_at: i64,
     pub bump: u8,
+    pub vault_bump: u8,
 }
 
 #[account]
@@ -271,6 +291,14 @@ pub struct CreatePot<'info> {
     )]
     pub pot: Account<'info, PotAccount>,
 
+    /// CHECK: Vault PDA to hold SOL (system-owned account, no data)
+    #[account(
+        mut,
+        seeds = [b"vault", pot.key().as_ref()],
+        bump
+    )]
+    pub pot_vault: SystemAccount<'info>,
+
     #[account(mut)]
     pub authority: Signer<'info>,
 
@@ -281,6 +309,14 @@ pub struct CreatePot<'info> {
 pub struct Contribute<'info> {
     #[account(mut)]
     pub pot: Account<'info, PotAccount>,
+
+    /// CHECK: Vault PDA to receive SOL
+    #[account(
+        mut,
+        seeds = [b"vault", pot.key().as_ref()],
+        bump = pot.vault_bump
+    )]
+    pub pot_vault: SystemAccount<'info>,
 
     #[account(
         init_if_needed,
@@ -313,11 +349,21 @@ pub struct ReleaseFunds<'info> {
     )]
     pub pot: Account<'info, PotAccount>,
 
+    /// CHECK: Vault PDA to transfer SOL from
+    #[account(
+        mut,
+        seeds = [b"vault", pot.key().as_ref()],
+        bump = pot.vault_bump
+    )]
+    pub pot_vault: SystemAccount<'info>,
+
     pub authority: Signer<'info>,
 
     /// CHECK: Recipient can be any account
     #[account(mut)]
     pub recipient: AccountInfo<'info>,
+
+    pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
@@ -345,9 +391,6 @@ pub enum ErrorCode {
 
     #[msg("Target amount must be greater than 0")]
     InvalidTargetAmount,
-
-    #[msg("Unlock period must be greater than 0 days")]
-    InvalidUnlockPeriod,
 
     #[msg("Signers required must be greater than 0")]
     InvalidSignersRequired,

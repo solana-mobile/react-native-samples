@@ -58,6 +58,7 @@ interface AppStore {
   addFriend: (publicKey: PublicKey, address: string, displayName?: string) => void
   removeFriend: (friendId: string) => void
   getFriendByAddress: (address: string) => Friend | undefined
+  setFriends: (friends: Friend[]) => void
 
   pots: Pot[]
   createPot: (pot: Omit<Pot, 'id' | 'createdAt' | 'contributions' | 'isReleased'>) => void
@@ -67,10 +68,14 @@ interface AppStore {
   releasePot: (potId: string, releasedBy: string) => void
   getPotById: (potId: string) => Pot | undefined
   getUserPots: (userAddress: string) => Pot[]
+  setPots: (pots: Pot[]) => void
 
   activities: Activity[]
   addActivity: (activity: Omit<Activity, 'id' | 'timestamp'>) => void
   getActivitiesForUser: (userAddress: string) => Activity[]
+  setActivities: (activities: Activity[]) => void
+
+  clearAll: () => void
 }
 
 // Mock data removed - now using backend API
@@ -787,6 +792,9 @@ export const useAppStore = create<AppStore>((set, get) => {
   getFriendByAddress: (address) => {
     return get().friends.find((f) => f.address === address)
   },
+  setFriends: (friends) => {
+    set({ friends })
+  },
 
   // Pots
   pots: [],
@@ -891,6 +899,9 @@ export const useAppStore = create<AppStore>((set, get) => {
       (pot) => pot.creatorAddress === userAddress || pot.contributors.includes(userAddress)
     )
   },
+  setPots: (pots) => {
+    set({ pots })
+  },
 
   // Activity
   activities: [],
@@ -906,6 +917,17 @@ export const useAppStore = create<AppStore>((set, get) => {
   },
   getActivitiesForUser: (userAddress) => {
     return get().activities.filter((activity) => activity.userId === userAddress)
+  },
+  setActivities: (activities) => {
+    set({ activities })
+  },
+
+  clearAll: () => {
+    set({
+      friends: [],
+      pots: [],
+      activities: [],
+    })
   },
   }
 })

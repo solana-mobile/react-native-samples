@@ -5,7 +5,7 @@ import { AddFriendModal } from '@/components/friends/AddFriendModal'
 import { EmptyState } from '@/components/friends/EmptyState'
 import { FriendRow } from '@/components/friends/FriendRow'
 import { useAuth } from '@/components/auth/auth-provider'
-import { useWalletUi } from '@/components/solana/use-wallet-ui'
+import { useMobileWalletAdapter } from '@wallet-ui/react-native-web3js'
 import { useScrollContext } from '@/components/tab-bar/scroll-context'
 import { useToast } from '@/components/toast/toast-provider'
 import { useAppTheme } from '@/hooks/use-app-theme'
@@ -39,7 +39,7 @@ const AVATAR_PALETTE = [
 export default function FriendsScreen() {
   const router = useRouter()
   const { palette, cardStyle, isDark } = useAppTheme()
-  const { account } = useWalletUi()
+  const { account } = useMobileWalletAdapter()
   const { user } = useAuth()
   const { scrollY, handleScroll } = useScrollContext()
 

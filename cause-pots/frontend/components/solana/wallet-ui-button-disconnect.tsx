@@ -1,9 +1,9 @@
-import { useWalletUi } from '@/components/solana/use-wallet-ui'
+import { useMobileWalletAdapter } from '@wallet-ui/react-native-web3js'
 import { BaseButton } from '@/components/solana/base-button'
 import React from 'react'
 
 export function WalletUiButtonDisconnect({ label = 'Disconnect' }: { label?: string }) {
-  const { disconnect } = useWalletUi()
+  const { disconnect } = useMobileWalletAdapter()
 
   return <BaseButton label={label} onPress={() => disconnect()} />
 }

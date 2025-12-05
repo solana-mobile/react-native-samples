@@ -1,6 +1,6 @@
 import { useThemeColor } from '@/hooks/use-theme-color'
 
-export function useWalletUiTheme() {
+export function useMobileWalletAdapterTheme() {
   const backgroundColor = useThemeColor({}, 'background')
   const listBackgroundColor = useThemeColor({}, 'background')
   const borderColor = useThemeColor({}, 'border')

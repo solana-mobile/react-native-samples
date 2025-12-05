@@ -1,18 +1,23 @@
 import React, { Fragment } from 'react'
 import { Linking, StyleSheet } from 'react-native'
 import Clipboard from '@react-native-clipboard/clipboard'
-import { useWalletUi } from '@/components/solana/use-wallet-ui'
+import { useMobileWalletAdapter } from '@wallet-ui/react-native-web3js'
 import { ellipsify } from '@/utils/ellipsify'
 import { UiIconSymbol } from '@/components/ui/ui-icon-symbol'
-import { useCluster } from '@/components/cluster/cluster-provider'
+import { AppConfig } from '@/constants/app-config'
 import { AppText } from '@/components/app-text'
 import * as Dropdown from '@rn-primitives/dropdown-menu'
 import { WalletUiButtonConnect } from './wallet-ui-button-connect'
-import { useWalletUiTheme } from '@/components/solana/use-wallet-ui-theme'
+import { useMobileWalletAdapterTheme } from '@/components/solana/use-wallet-ui-theme'
+
+function getExplorerUrl(path: string): string {
+  const cluster = AppConfig.clusters[0]
+  const clusterParam = cluster.id === 'solana:mainnet' ? '' : `?cluster=${cluster.name.toLowerCase()}`
+  return `https://explorer.solana.com/${path}${clusterParam}`
+}
 
 function useDropdownItems() {
-  const { getExplorerUrl } = useCluster()
-  const { account, disconnect } = useWalletUi()
+  const { account, disconnect } = useMobileWalletAdapter()
   if (!account) {
     return []
   }
@@ -33,8 +38,8 @@ function useDropdownItems() {
 }
 
 export function WalletUiDropdown() {
-  const { account } = useWalletUi()
-  const { backgroundColor, borderColor, textColor } = useWalletUiTheme()
+  const { account } = useMobileWalletAdapter()
+  const { backgroundColor, borderColor, textColor } = useMobileWalletAdapterTheme()
 
   const items = useDropdownItems()
 

@@ -5,18 +5,15 @@ import dotenv from 'dotenv'
 dotenv.config()
 
 const dummyUsersData = [
-  { pubkey: '9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM', name: 'Bob' },
-  { pubkey: '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM94', name: 'Charlie' },
-  { pubkey: 'GjJyeC1rB1p4xYWbXqM6zJY1ZJ8KJ8KJ8KJ8KJ8KJ8KJ8', name: 'Diana' },
-  { pubkey: 'H6ARHf6YXhGYeQfUzQNGk6rDNnlbQPH1i6XBLBwX3L1e', name: 'Eve' },
-  { pubkey: 'F4k3AdDr3ssF0rT3st1ngPurp0s3sOnly1234567890', name: 'Frank' },
-  { pubkey: 'Gr8tS0m3Addr3ss1234567890ABCDEFGHIJKLMNoPQR', name: 'Grace' },
+  { pubkey: '7WKaHxMy54Mn5JPpETqiwwkcyJLmkcsrjwfvUnDqPpdN', name: 'Alice' },
+  { pubkey: '3Q9PWRpFA6mavhMf2J49sYJvBP1dEbBrZT8GRu8kSK9i', name: 'Bob' },
+  { pubkey: 'MbWYUcFtq7Bn5YWuYRdguP1rj8jCpX99nHJF3x83FQt', name: 'Charlie' },
 ]
 
 async function seedDatabase() {
   try {
     await db.connect()
-    console.log('\n🌱 Seeding database with dummy users...\n')
+    console.log('\n Seeding database with dummy users...\n')
 
     // Create dummy users
     console.log('Creating dummy users...')

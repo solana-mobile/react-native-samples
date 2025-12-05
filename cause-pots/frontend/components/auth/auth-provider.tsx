@@ -1,6 +1,7 @@
 import React, { createContext, PropsWithChildren, useContext, useState, useCallback, useEffect } from 'react'
-import { useWalletUi } from '@/components/solana/use-wallet-ui'
+import { useMobileWalletAdapter } from '@wallet-ui/react-native-web3js'
 import { useWalletAuth } from '@/hooks/useWalletAuth'
+import { useAppStore } from '@/store/app-store'
 import type { User } from '@/api/types'
 
 export interface AuthProviderState {
@@ -15,8 +16,9 @@ const AuthContext = createContext<AuthProviderState>({} as AuthProviderState)
 
 export function AuthProvider({ children }: PropsWithChildren) {
   const [isLoading, setIsLoading] = useState(false)
-  const { account, connect, disconnect } = useWalletUi()
+  const { account, connect, disconnect } = useMobileWalletAdapter()
   const { user, authenticate, restoreUser, logout } = useWalletAuth()
+  const { clearAll } = useAppStore()
 
   // Restore user session on mount
   useEffect(() => {
@@ -56,12 +58,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
     try {
       await disconnect()
       await logout()
+      clearAll() // Clear all data from store on logout
     } catch (error) {
       console.error('Sign out error:', error)
     } finally {
       setIsLoading(false)
     }
-  }, [disconnect, logout])
+  }, [disconnect, logout, clearAll])
 
   return (
     <AuthContext.Provider

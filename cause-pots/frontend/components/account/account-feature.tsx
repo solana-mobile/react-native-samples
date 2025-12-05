@@ -1,4 +1,4 @@
-import { useWalletUi } from '@/components/solana/use-wallet-ui'
+import { useMobileWalletAdapter } from '@wallet-ui/react-native-web3js'
 import { AppText } from '@/components/app-text'
 import { useScrollContext } from '@/components/tab-bar/scroll-context'
 import { ellipsify } from '@/utils/ellipsify'
@@ -18,17 +18,17 @@ import { useColorScheme } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import Clipboard from '@react-native-clipboard/clipboard'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
-import { useCluster } from '@/components/cluster/cluster-provider'
+import { AppConfig } from '@/constants/app-config'
 import { useAuth } from '@/components/auth/auth-provider'
 
 export function AccountFeature() {
-  const { account } = useWalletUi()
+  const { account } = useMobileWalletAdapter()
   const { signOut, user } = useAuth()
   const router = useRouter()
   const colorScheme = useColorScheme()
   const isDark = colorScheme === 'dark'
   const colors = Colors[isDark ? 'dark' : 'light']
-  const { selectedCluster } = useCluster()
+  const selectedCluster = AppConfig.clusters[0] // Use default cluster from config
   const { scrollY, handleScroll } = useScrollContext()
   const [refreshing, setRefreshing] = useState(false)
   const [lastSynced, setLastSynced] = useState<Date | null>(null)

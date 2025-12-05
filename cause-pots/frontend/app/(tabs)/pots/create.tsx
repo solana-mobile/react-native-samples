@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { AppPage } from '@/components/app-page'
 import { Colors } from '@/constants/colors'
 import { useToast } from '@/components/toast/toast-provider'
-import { useWalletUi } from '@/components/solana/use-wallet-ui'
+import { useMobileWalletAdapter } from '@wallet-ui/react-native-web3js'
 import { useAppStore, PotCategory } from '@/store/app-store'
 import { CreatePotHeader } from '@/components/pots/create/CreatePotHeader'
 import { OverviewSection } from '@/components/pots/create/OverviewSection'
@@ -33,7 +33,7 @@ export default function CreatePotScreen() {
   const isDark = colorScheme === 'dark'
   const colors = Colors[isDark ? 'dark' : 'light']
 
-  const { account } = useWalletUi()
+  const { account } = useMobileWalletAdapter()
   const { friends, createPot } = useAppStore()
   const { showToast } = useToast()
 

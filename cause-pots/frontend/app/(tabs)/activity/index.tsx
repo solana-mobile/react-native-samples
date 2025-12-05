@@ -9,7 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { useAppStore } from '@/store/app-store';
-import { useWalletUi } from '@/components/solana/use-wallet-ui';
+import { useMobileWalletAdapter } from '@wallet-ui/react-native-web3js';
 import { AppText } from '@/components/app-text';
 import { AppPage } from '@/components/app-page';
 import { useScrollContext } from '@/components/tab-bar/scroll-context';
@@ -27,7 +27,7 @@ export default function ActivityScreen() {
   const { scrollY, handleScroll } = useScrollContext();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const { account } = useWalletUi();
+  const { account } = useMobileWalletAdapter();
   const { activities, getFriendByAddress } = useAppStore();
   const router = useRouter();
 

@@ -2,10 +2,10 @@ import React from 'react'
 import { AppText } from '@/components/app-text'
 import { StyleSheet, TouchableOpacity } from 'react-native'
 import { UiIconSymbol } from '@/components/ui/ui-icon-symbol'
-import { useWalletUiTheme } from '@/components/solana/use-wallet-ui-theme'
+import { useMobileWalletAdapterTheme } from '@/components/solana/use-wallet-ui-theme'
 
 export function BaseButton({ label, onPress }: { label: string; onPress?: () => void }) {
-  const { borderColor, textColor } = useWalletUiTheme()
+  const { borderColor, textColor } = useMobileWalletAdapterTheme()
   return (
     <TouchableOpacity
       style={[styles.trigger, { borderColor, flexDirection: 'row', alignItems: 'center', gap: 8 }]}

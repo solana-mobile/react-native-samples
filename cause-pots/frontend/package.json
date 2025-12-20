@@ -38,6 +38,7 @@
   "main": "./index.js",
   "version": "1.0.0",
   "dependencies": {
+    "@coral-xyz/anchor": "^0.32.1",
     "@expo/vector-icons": "^15.0.2",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-clipboard/clipboard": "^1.16.2",
@@ -57,6 +58,7 @@
     "buffer": "^6.0.3",
     "expo": "~54.0.21",
     "expo-blur": "~15.0.7",
+    "expo-clipboard": "^8.0.8",
     "expo-constants": "~18.0.9",
     "expo-crypto": "^15.0.7",
     "expo-dev-client": "~6.0.13",

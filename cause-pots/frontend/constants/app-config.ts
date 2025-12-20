@@ -9,6 +9,10 @@ export type Cluster = {
 export class AppConfig {
   static name = 'pots'
   static uri = 'https://example.com'
+
+  // Blockchain configuration
+  static programId = 'CTtGEyhWsub71K9bDKJZbaBDNbqNk54fUuh4pLB8M5sR'
+
   static clusters: Cluster[] = [
     {
       id: 'solana:devnet',

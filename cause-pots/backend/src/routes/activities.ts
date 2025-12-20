@@ -63,7 +63,8 @@ router.get('/', async (req: Request, res: Response) => {
       friendName: activity.friend_name,
       friendAddress: activity.friend_address,
       amount: activity.amount,
-      currency: activity.currency
+      currency: activity.currency,
+      transactionSignature: activity.transaction_signature
     }))
 
     res.json(formattedActivities)

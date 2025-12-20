@@ -33,16 +33,23 @@ export type Pot = {
   name: string
   description?: string
   creatorAddress: string
+  potPubkey?: string
+  vaultPubkey?: string
   targetAmount: number
+  totalContributed?: number
   targetDate: string
+  unlockTimestamp?: number
   currency: 'SOL' | 'USDC'
   category: PotCategory
+  signersRequired?: number
+  signatures?: string[]
   contributors: string[]
   contributions: Contribution[]
   createdAt: string
   isReleased: boolean
   releasedAt?: string
   releasedBy?: string
+  recipientAddress?: string
 }
 
 export type ActivityType = 'pot_created' | 'contribution' | 'release' | 'friend_added'
@@ -61,17 +68,24 @@ export type Activity = {
   friendAddress?: string
   amount?: number
   currency?: 'SOL' | 'USDC'
+  transactionSignature?: string
 }
 
 export type CreatePotRequest = {
   name: string
   description?: string
   creatorAddress: string
+  potPubkey?: string
+  vaultPubkey?: string
   targetAmount: number
   targetDate: string
+  unlockTimestamp?: number
   currency: 'SOL' | 'USDC'
   category: PotCategory
+  signersRequired?: number
+  recipientAddress?: string
   contributors: string[]
+  transactionSignature?: string
 }
 
 export type UpdatePotRequest = {
@@ -88,6 +102,7 @@ export type AddContributionRequest = {
   contributorAddress: string
   amount: number
   currency: 'SOL' | 'USDC'
+  transactionSignature?: string
 }
 
 export type AddFriendRequest = {

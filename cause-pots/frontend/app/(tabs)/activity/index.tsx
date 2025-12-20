@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useState } from 'react';
+import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -28,8 +28,16 @@ export default function ActivityScreen() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const { account } = useMobileWalletAdapter();
-  const { activities, getFriendByAddress } = useAppStore();
+  const { activities, getFriendByAddress, fetchActivities } = useAppStore();
   const router = useRouter();
+
+  // Fetch activities when component mounts or account changes
+  useEffect(() => {
+    if (account) {
+      const userAddress = account.publicKey.toBase58();
+      fetchActivities(userAddress);
+    }
+  }, [account, fetchActivities]);
 
   /* ---------- ICON HELPERS (COLORS & TYPES) ---------- */
   const getActivityIcon = useCallback((type: string) => {
@@ -71,13 +79,14 @@ export default function ActivityScreen() {
   const relevantActivities = useMemo(() => {
     if (!account) return activities;
 
-    const userPots = useAppStore.getState().getUserPots(account.address);
+    const userAddress = account.publicKey.toBase58();
+    const userPots = useAppStore.getState().getUserPots(userAddress);
     const userFriends = useAppStore.getState().friends;
 
     return activities.filter((a) => {
       const isUserPot = userPots.some((p) => p.id === a.potId);
       const isUserFriend = userFriends.some((f) => f.address === a.userId || f.address === a.friendAddress);
-      return isUserPot || isUserFriend || a.userId === account.address;
+      return isUserPot || isUserFriend || a.userId === userAddress;
     });
   }, [account, activities]);
 
@@ -220,6 +229,7 @@ export default function ActivityScreen() {
               return (
                 <View key={a.id} style={s.rowWrapper}>
                   <Pressable
+                    onPress={() => router.push(`/activity-detail/${a.id}`)}
                     style={({ pressed }) => [
                       s.row,
                         {

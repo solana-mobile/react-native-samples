@@ -108,6 +108,7 @@ export async function addContribution(request: AddContributionRequest): Promise<
       contributorAddress: request.contributorAddress,
       amount: request.amount,
       currency: request.currency,
+      transactionSignature: request.transactionSignature,
     }),
   })
 
@@ -126,13 +127,13 @@ export async function removeContribution(potId: string, contributionId: string):
   }
 }
 
-export async function releasePot(potId: string, releasedBy: string): Promise<void> {
+export async function releasePot(potId: string, releasedBy: string, transactionSignature?: string): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/api/pots/${potId}/release`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ releasedBy }),
+    body: JSON.stringify({ releasedBy, transactionSignature }),
   })
 
   if (!response.ok) {

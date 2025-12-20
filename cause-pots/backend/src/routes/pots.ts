@@ -34,15 +34,29 @@ async function getPotWithDetails(potId: string): Promise<Pot | null> {
     [potId]
   )
 
+  // Parse signatures JSON
+  let signatures: string[] = []
+  try {
+    signatures = pot.signatures ? JSON.parse(pot.signatures) : []
+  } catch (e) {
+    console.error('Error parsing signatures:', e)
+  }
+
   return {
     id: pot.id,
     name: pot.name,
     description: pot.description,
     creatorAddress: creator?.address || pot.creator_id,
+    potPubkey: pot.pot_pubkey,
+    vaultPubkey: pot.vault_pubkey,
     targetAmount: pot.target_amount,
+    totalContributed: pot.total_contributed || 0,
     targetDate: pot.target_date,
+    unlockTimestamp: pot.unlock_timestamp || 0,
     currency: pot.currency,
     category: pot.category,
+    signersRequired: pot.signers_required || 1,
+    signatures,
     contributors: contributorsData.map(u => u.address),
     contributions: contributionsData.map(c => ({
       id: c.id,
@@ -55,7 +69,8 @@ async function getPotWithDetails(potId: string): Promise<Pot | null> {
     createdAt: pot.created_at,
     isReleased: pot.is_released === 1,
     releasedAt: pot.released_at,
-    releasedBy: pot.released_by
+    releasedBy: pot.released_by,
+    recipientAddress: pot.recipient_address
   }
 }
 
@@ -90,9 +105,25 @@ router.post('/', async (req: Request, res: Response) => {
     const now = new Date().toISOString()
 
     await db.run(
-      `INSERT INTO pots (id, name, description, creator_id, target_amount, target_date, currency, category, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [potId, potData.name, potData.description || null, creator.id, potData.targetAmount, potData.targetDate, potData.currency, potData.category, now]
+      `INSERT INTO pots (id, name, description, creator_id, pot_pubkey, vault_pubkey, target_amount, total_contributed, target_date, unlock_timestamp, currency, category, signers_required, recipient_address, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        potId,
+        potData.name,
+        potData.description || null,
+        creator.id,
+        potData.potPubkey || null,
+        potData.vaultPubkey || null,
+        potData.targetAmount,
+        0, // total_contributed starts at 0
+        potData.targetDate,
+        potData.unlockTimestamp || 0,
+        potData.currency,
+        potData.category,
+        potData.signersRequired || 1,
+        potData.recipientAddress || null,
+        now
+      ]
     )
 
     // Add contributors
@@ -124,9 +155,9 @@ router.post('/', async (req: Request, res: Response) => {
 
     // Create activity
     await db.run(
-      `INSERT INTO activities (id, type, timestamp, user_id, pot_id)
-       VALUES (?, ?, ?, ?, ?)`,
-      [uuidv4(), 'pot_created', now, creator.id, potId]
+      `INSERT INTO activities (id, type, timestamp, user_id, pot_id, transaction_signature)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [uuidv4(), 'pot_created', now, creator.id, potId, potData.transactionSignature || null]
     )
 
     res.status(201).json(pot)
@@ -346,7 +377,7 @@ router.delete('/:id/contributors/:address', async (req: Request, res: Response) 
 router.post('/:id/contributions', async (req: Request, res: Response) => {
   try {
     const { id } = req.params
-    const { contributorAddress, amount, currency }: AddContributionRequest = req.body
+    const { contributorAddress, amount, currency, transactionSignature }: AddContributionRequest = req.body
 
     if (!contributorAddress || amount === undefined || !currency) {
       res.status(400).json({ error: 'Missing required fields' })
@@ -396,9 +427,9 @@ router.post('/:id/contributions', async (req: Request, res: Response) => {
 
     // Create activity
     await db.run(
-      `INSERT INTO activities (id, type, timestamp, user_id, pot_id, amount, currency)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [uuidv4(), 'contribution', now, contributor.id, id, amount, currency]
+      `INSERT INTO activities (id, type, timestamp, user_id, pot_id, amount, currency, transaction_signature)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [uuidv4(), 'contribution', now, contributor.id, id, amount, currency, transactionSignature || null]
     )
 
     res.status(201).json({
@@ -432,11 +463,57 @@ router.delete('/:id/contributions/:contributionId', async (req: Request, res: Re
   }
 })
 
+// POST /api/pots/:id/sign - Sign release for pot
+router.post('/:id/sign', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const { signerAddress } = req.body
+
+    if (!signerAddress) {
+      res.status(400).json({ error: 'signerAddress is required' })
+      return
+    }
+
+    const existingPot = await db.get<any>('SELECT * FROM pots WHERE id = ?', [id])
+    if (!existingPot) {
+      res.status(404).json({ error: 'Pot not found' })
+      return
+    }
+
+    // Parse existing signatures
+    let signatures: string[] = []
+    try {
+      signatures = existingPot.signatures ? JSON.parse(existingPot.signatures) : []
+    } catch (e) {
+      console.error('Error parsing signatures:', e)
+    }
+
+    // Check if already signed
+    if (signatures.includes(signerAddress)) {
+      res.status(400).json({ error: 'Already signed' })
+      return
+    }
+
+    // Add signature
+    signatures.push(signerAddress)
+
+    await db.run(
+      'UPDATE pots SET signatures = ? WHERE id = ?',
+      [JSON.stringify(signatures), id]
+    )
+
+    res.json({ success: true, signatures })
+  } catch (error) {
+    console.error('Error signing release:', error)
+    res.status(500).json({ error: 'Failed to sign release' })
+  }
+})
+
 // POST /api/pots/:id/release - Release pot funds
 router.post('/:id/release', async (req: Request, res: Response) => {
   try {
     const { id } = req.params
-    const { releasedBy } = req.body
+    const { releasedBy, transactionSignature } = req.body
 
     if (!releasedBy) {
       res.status(400).json({ error: 'releasedBy is required' })
@@ -474,9 +551,9 @@ router.post('/:id/release', async (req: Request, res: Response) => {
 
     // Create activity
     await db.run(
-      `INSERT INTO activities (id, type, timestamp, user_id, pot_id, amount, currency)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [uuidv4(), 'release', now, user.id, id, totalAmount?.total || 0, existingPot.currency]
+      `INSERT INTO activities (id, type, timestamp, user_id, pot_id, amount, currency, transaction_signature)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [uuidv4(), 'release', now, user.id, id, totalAmount?.total || 0, existingPot.currency, transactionSignature || null]
     )
 
     res.json({ success: true })

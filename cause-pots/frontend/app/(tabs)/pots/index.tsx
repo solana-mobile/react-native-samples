@@ -39,7 +39,11 @@ export default function PotsScreen() {
   const { account } = useMobileWalletAdapter()
   const { getUserPots, pots } = useAppStore()
   // Show all pots if user is connected, or filter by user address
-  const allUserPots = account ? (getUserPots(account.address).length > 0 ? getUserPots(account.address) : pots) : []
+  const allUserPots = account ? (() => {
+    const userAddress = account.publicKey.toBase58()
+    const userPots = getUserPots(userAddress)
+    return userPots.length > 0 ? userPots : pots
+  })() : []
 
   // helpers (preserve original logic)
   const getTotalContributed = (pot: any) => pot.contributions.reduce((s: number, c: any) => s + c.amount, 0)

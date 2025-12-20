@@ -16,13 +16,20 @@ CREATE TABLE IF NOT EXISTS pots (
     name TEXT NOT NULL,
     description TEXT,
     creator_id TEXT NOT NULL,
+    pot_pubkey TEXT UNIQUE,
+    vault_pubkey TEXT,
     target_amount REAL NOT NULL,
+    total_contributed REAL DEFAULT 0,
     target_date TEXT NOT NULL,
+    unlock_timestamp INTEGER DEFAULT 0,
     currency TEXT NOT NULL CHECK (currency IN ('SOL', 'USDC')),
     category TEXT NOT NULL CHECK (category IN ('Goal', 'Emergency', 'Bills', 'Events', 'Others')),
+    signers_required INTEGER DEFAULT 1,
+    signatures TEXT DEFAULT '[]',
     is_released INTEGER DEFAULT 0,
     released_at TEXT,
     released_by TEXT,
+    recipient_address TEXT,
     created_at TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (released_by) REFERENCES users(id) ON DELETE SET NULL
@@ -72,6 +79,7 @@ CREATE TABLE IF NOT EXISTS activities (
     friend_id TEXT,
     amount REAL,
     currency TEXT CHECK (currency IN ('SOL', 'USDC')),
+    transaction_signature TEXT,
     metadata TEXT,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (pot_id) REFERENCES pots(id) ON DELETE CASCADE,
@@ -82,6 +90,7 @@ CREATE TABLE IF NOT EXISTS activities (
 CREATE INDEX IF NOT EXISTS idx_users_pubkey ON users(pubkey);
 CREATE INDEX IF NOT EXISTS idx_users_address ON users(address);
 CREATE INDEX IF NOT EXISTS idx_pots_creator ON pots(creator_id);
+CREATE INDEX IF NOT EXISTS idx_pots_pubkey ON pots(pot_pubkey);
 CREATE INDEX IF NOT EXISTS idx_pots_created_at ON pots(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_pot_contributors_pot ON pot_contributors(pot_id);
 CREATE INDEX IF NOT EXISTS idx_pot_contributors_user ON pot_contributors(user_id);

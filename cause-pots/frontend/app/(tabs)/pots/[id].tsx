@@ -15,6 +15,8 @@ import { useMobileWalletAdapter } from '@wallet-ui/react-native-web3js'
 import { useToast } from '@/components/toast/toast-provider'
 import { Colors } from '@/constants/colors'
 import { PotCategory, useAppStore } from '@/store/app-store'
+import { usePotProgram } from '@/hooks/use-pot-program'
+import { useCurrencyConversion } from '@/hooks/use-currency-conversion'
 import { ellipsify } from '@/utils/ellipsify'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import React, { useCallback, useState } from 'react'
@@ -27,8 +29,15 @@ export default function PotDetailsScreen() {
   const isDark = colorScheme === 'dark'
   const colors = Colors[isDark ? 'dark' : 'light']
   const { account } = useMobileWalletAdapter()
-  const { getPotById, addContribution, releasePot, updatePot, addContributorToPot, friends } = useAppStore()
+  const { getPotById, addContribution, releasePot, updatePot, addContributorToPot, friends, fetchActivities } = useAppStore()
   const { showToast } = useToast()
+  const {
+    contribute: contributeOnChain,
+    signRelease: signReleaseOnChain,
+    releaseFunds: releaseFundsOnChain,
+    isLoading: isBlockchainLoading
+  } = usePotProgram()
+  const { usdToSol, solPrice } = useCurrencyConversion()
   const pot = id ? getPotById(id) : null
 
   const [showContributeModal, setShowContributeModal] = useState(false)
@@ -63,13 +72,14 @@ export default function PotDetailsScreen() {
     )
   }
 
+  const userAddress = account.publicKey.toBase58()
   const totalContributed = pot.contributions.reduce((sum, c) => sum + c.amount, 0)
   const progress = Math.min((totalContributed / pot.targetAmount) * 100, 100)
   const isTargetReached = progress >= 100
   const isReleaseable = isTargetReached && !pot.isReleased
-  const isContributor = pot.contributors.includes(account.address) || pot.creatorAddress === account.address
+  const isContributor = pot.contributors.includes(userAddress) || pot.creatorAddress === userAddress
 
-  const handleContribute = () => {
+  const handleContribute = async () => {
     const amount = parseFloat(contributionAmount)
     if (isNaN(amount) || amount <= 0) {
       Alert.alert('Error', 'Please enter a valid amount greater than 0')
@@ -78,37 +88,162 @@ export default function PotDetailsScreen() {
 
     const currency = pot.currency
 
-    addContribution({
-      potId: pot.id,
-      contributorAddress: account.address,
-      amount,
-      currency,
-    })
+    try {
+      // Use the stored pot pubkey from blockchain
+      const potPubkey = pot.potPubkey || pot.id
 
-    setContributionAmount('')
-    setShowContributeModal(false)
-    showToast({
-      title: 'Contribution sent',
-      message: `+${amount.toFixed(2)} ${currency} into ${pot.name}`,
-      type: 'success',
-    })
+      if (!pot.potPubkey) {
+        Alert.alert('Error', 'Pot not yet on blockchain. Please try again later.')
+        return
+      }
+
+      // Convert to SOL if currency is USDC
+      // Blockchain always uses SOL, USDC is just for display
+      const amountInSol = currency === 'USDC' ? usdToSol(amount) : amount
+
+      // Contribute on blockchain (always in SOL)
+      const signature = await contributeOnChain({
+        potPubkey,
+        amount: amountInSol,
+      })
+
+      // Update local store with display amount
+      await addContribution({
+        potId: pot.id,
+        contributorAddress: userAddress,
+        amount, // Store display amount
+        currency,
+        transactionSignature: signature, // Store blockchain tx signature
+      })
+
+      // Refetch activities to include the new contribution with tx signature
+      await fetchActivities(userAddress)
+
+      setContributionAmount('')
+      setShowContributeModal(false)
+      showToast({
+        title: 'Contribution sent',
+        message: currency === 'USDC'
+          ? `+$${amount.toFixed(2)} (≈${amountInSol.toFixed(4)} SOL) into ${pot.name}`
+          : `+${amount.toFixed(4)} ${currency} into ${pot.name}`,
+        type: 'success',
+      })
+    } catch (error) {
+      console.error('Error contributing:', error)
+      showToast({
+        title: 'Contribution failed',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        type: 'error',
+      })
+    }
+  }
+
+  const handleSignRelease = async () => {
+    try {
+      const potPubkey = pot.potPubkey || pot.id
+
+      if (!pot.potPubkey) {
+        Alert.alert('Error', 'Pot not yet on blockchain. Please try again later.')
+        return
+      }
+
+      // Sign release on blockchain
+      await signReleaseOnChain(potPubkey)
+
+      showToast({
+        title: 'Release signed',
+        message: `Your signature has been recorded`,
+        type: 'success',
+      })
+    } catch (error) {
+      console.error('Error signing release:', error)
+      showToast({
+        title: 'Sign failed',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        type: 'error',
+      })
+    }
   }
 
   const handleRelease = () => {
-    Alert.alert('Release Pot', 'Are you sure you want to release this pot?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Release',
-        onPress: () => {
-          releasePot(pot.id, account.address)
-          showToast({
-            title: 'Pot released',
-            message: `${pot.name} funds are now available`,
-            type: 'success',
-          })
+    // Validation before attempting release
+    const now = Date.now()
+    const unlockTime = pot.unlockTimestamp ? pot.unlockTimestamp * 1000 : new Date(pot.targetDate).getTime()
+    const hasUnlockTimePassed = now >= unlockTime
+
+    if (!hasUnlockTimePassed) {
+      const unlockDate = new Date(unlockTime).toLocaleDateString()
+      Alert.alert(
+        'Cannot Release Yet',
+        `This pot cannot be released until ${unlockDate}. Please wait until the unlock date has passed.`,
+        [{ text: 'OK' }]
+      )
+      return
+    }
+
+    if (pot.isReleased) {
+      Alert.alert('Already Released', 'This pot has already been released.', [{ text: 'OK' }])
+      return
+    }
+
+    // Check if enough signatures (if multi-sig)
+    const currentSignatures = pot.signatures?.length || 0
+    const requiredSignatures = pot.signersRequired || 1
+    if (currentSignatures < requiredSignatures) {
+      Alert.alert(
+        'Not Enough Signatures',
+        `This pot requires ${requiredSignatures} signature(s) but only has ${currentSignatures}. Please get more contributors to sign.`,
+        [{ text: 'OK' }]
+      )
+      return
+    }
+
+    Alert.alert(
+      'Release Pot',
+      `Funds will be released to the pot creator (${ellipsify(pot.creatorAddress, 8)}). Continue?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Release',
+          onPress: async () => {
+            try {
+              const potPubkey = pot.potPubkey || pot.id
+              const recipient = pot.creatorAddress // Funds go to the creator
+
+              if (!pot.potPubkey) {
+                Alert.alert('Error', 'Pot not yet on blockchain. Please try again later.')
+                return
+              }
+
+              // Release funds on blockchain
+              const signature = await releaseFundsOnChain({
+                potPubkey,
+                recipient,
+              })
+
+              // Update local store
+              await releasePot(pot.id, userAddress, signature)
+
+              // Refetch activities to include the release activity with tx signature
+              await fetchActivities(userAddress)
+
+              showToast({
+                title: 'Pot released',
+                message: `Funds sent to creator ${ellipsify(pot.creatorAddress, 8)}`,
+                type: 'success',
+              })
+            } catch (error) {
+              console.error('Error releasing pot:', error)
+              showToast({
+                title: 'Release failed',
+                message: error instanceof Error ? error.message : 'Unknown error',
+                type: 'error',
+              })
+            }
+          },
         },
-      },
-    ])
+      ]
+    )
   }
 
   const handleEdit = (name: string, description: string) => {

@@ -10,6 +10,8 @@ interface GoalSectionProps {
   isDark: boolean
   onAmountChange: (amount: string) => void
   onCurrencyChange: (currency: 'SOL' | 'USDC') => void
+  solEquivalent?: number // SOL equivalent when USDC is selected
+  solPrice?: number // Current SOL/USD rate
 }
 
 export function GoalSection({
@@ -20,7 +22,12 @@ export function GoalSection({
   isDark,
   onAmountChange,
   onCurrencyChange,
+  solEquivalent,
+  solPrice,
 }: GoalSectionProps) {
+  const numAmount = parseFloat(amount)
+  const showConversion = currency === 'USDC' && !isNaN(numAmount) && numAmount > 0 && solEquivalent
+
   return (
     <View style={[styles.goalSection, { backgroundColor: palette.surface, borderColor: palette.border }]}>
       <AppText style={[styles.goalSectionLabel, { color: palette.label }]}>Goal *</AppText>
@@ -59,6 +66,20 @@ export function GoalSection({
           })}
         </View>
       </View>
+
+      {/* Show conversion info when USDC is selected */}
+      {showConversion && (
+        <View style={styles.conversionInfo}>
+          <AppText style={[styles.conversionText, { color: palette.textSecondary }]}>
+            ≈ {solEquivalent.toFixed(4)} SOL
+          </AppText>
+          {solPrice && (
+            <AppText style={[styles.rateText, { color: palette.label }]}>
+              (1 SOL = ${solPrice.toFixed(2)})
+            </AppText>
+          )}
+        </View>
+      )}
     </View>
   )
 }
@@ -104,6 +125,18 @@ const styles = StyleSheet.create({
   goalCurrencyText: {
     fontSize: 13,
     fontWeight: '600',
+  },
+  conversionInfo: {
+    marginTop: 6,
+    gap: 2,
+  },
+  conversionText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  rateText: {
+    fontSize: 11,
+    fontWeight: '500',
   },
 })
 

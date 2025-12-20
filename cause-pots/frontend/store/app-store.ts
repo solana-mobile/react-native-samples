@@ -25,16 +25,23 @@ export type Pot = {
   name: string
   description?: string
   creatorAddress: string
+  potPubkey?: string
+  vaultPubkey?: string
   targetAmount: number
+  totalContributed?: number
   targetDate: Date
+  unlockTimestamp?: number
   currency: 'SOL' | 'USDC'
   category: PotCategory
+  signersRequired?: number
+  signatures?: string[]
   contributors: string[]
   contributions: Contribution[]
   createdAt: Date
   isReleased: boolean
   releasedAt?: Date
   releasedBy?: string
+  recipientAddress?: string
 }
 
 export type ActivityType = 'pot_created' | 'contribution' | 'release' | 'friend_added'
@@ -51,6 +58,7 @@ export type Activity = {
   friendAddress?: string
   amount?: number
   currency?: 'SOL' | 'USDC'
+  transactionSignature?: string
 }
 
 interface AppStore {
@@ -61,18 +69,17 @@ interface AppStore {
   setFriends: (friends: Friend[]) => void
 
   pots: Pot[]
-  createPot: (pot: Omit<Pot, 'id' | 'createdAt' | 'contributions' | 'isReleased'>) => void
+  createPot: (pot: Omit<Pot, 'id' | 'createdAt' | 'contributions' | 'isReleased'> & { transactionSignature?: string }) => Promise<void>
   updatePot: (potId: string, updates: Partial<Pot>) => void
   addContributorToPot: (potId: string, contributorAddress: string) => void
-  addContribution: (contribution: Omit<Contribution, 'id' | 'timestamp'>) => void
-  releasePot: (potId: string, releasedBy: string) => void
+  addContribution: (contribution: Omit<Contribution, 'id' | 'timestamp'> & { transactionSignature?: string }) => Promise<void>
+  releasePot: (potId: string, releasedBy: string, transactionSignature?: string) => Promise<void>
   getPotById: (potId: string) => Pot | undefined
   getUserPots: (userAddress: string) => Pot[]
   setPots: (pots: Pot[]) => void
 
   activities: Activity[]
-  addActivity: (activity: Omit<Activity, 'id' | 'timestamp'>) => void
-  getActivitiesForUser: (userAddress: string) => Activity[]
+  fetchActivities: (userAddress?: string) => Promise<void>
   setActivities: (activities: Activity[]) => void
 
   clearAll: () => void
@@ -777,12 +784,6 @@ export const useAppStore = create<AppStore>((set, get) => {
     set((state) => ({
       friends: [...state.friends, friend],
     }))
-    get().addActivity({
-      type: 'friend_added',
-      userId: address,
-      friendId: friend.id,
-      friendAddress: address,
-    })
   },
   removeFriend: (friendId) => {
     set((state) => ({
@@ -798,23 +799,47 @@ export const useAppStore = create<AppStore>((set, get) => {
 
   // Pots
   pots: [],
-  createPot: (potData) => {
-    const pot: Pot = {
-      ...potData,
-      id: `pot-${Date.now()}-${Math.random()}`,
-      contributions: [],
-      createdAt: new Date(),
-      isReleased: false,
+  createPot: async (potData) => {
+    try {
+      // Call backend API to create pot
+      const createdPot = await import('../api/pots').then(api =>
+        api.createPot({
+          name: potData.name,
+          description: potData.description,
+          creatorAddress: potData.creatorAddress,
+          potPubkey: potData.potPubkey,
+          vaultPubkey: potData.vaultPubkey,
+          targetAmount: potData.targetAmount,
+          targetDate: potData.targetDate.toISOString(),
+          unlockTimestamp: potData.unlockTimestamp,
+          currency: potData.currency,
+          category: potData.category,
+          signersRequired: potData.signersRequired,
+          recipientAddress: potData.recipientAddress,
+          contributors: potData.contributors,
+          transactionSignature: potData.transactionSignature,
+        })
+      )
+
+      // Convert API response (string dates) to local format (Date objects)
+      const pot: Pot = {
+        ...createdPot,
+        targetDate: new Date(createdPot.targetDate),
+        createdAt: new Date(createdPot.createdAt),
+        releasedAt: createdPot.releasedAt ? new Date(createdPot.releasedAt) : undefined,
+        contributions: createdPot.contributions.map(c => ({
+          ...c,
+          timestamp: new Date(c.timestamp),
+        })),
+      }
+
+      set((state) => ({
+        pots: [...state.pots, pot],
+      }))
+    } catch (error) {
+      console.error('Failed to create pot in database:', error)
+      throw error
     }
-    set((state) => ({
-      pots: [...state.pots, pot],
-    }))
-    get().addActivity({
-      type: 'pot_created',
-      userId: pot.creatorAddress,
-      potId: pot.id,
-      potName: pot.name,
-    })
   },
   updatePot: (potId, updates) => {
     set((state) => ({
@@ -852,44 +877,56 @@ export const useAppStore = create<AppStore>((set, get) => {
       }
     })
   },
-  addContribution: (contributionData) => {
-    const contribution: Contribution = {
-      ...contributionData,
-      id: `contribution-${Date.now()}-${Math.random()}`,
-      timestamp: new Date(),
+  addContribution: async (contributionData) => {
+    try {
+      // Call backend API to add contribution
+      await import('../api/pots').then(api =>
+        api.addContribution({
+          potId: contributionData.potId,
+          contributorAddress: contributionData.contributorAddress,
+          amount: contributionData.amount,
+          currency: contributionData.currency,
+          transactionSignature: contributionData.transactionSignature,
+        })
+      )
+
+      // Update local state
+      const contribution: Contribution = {
+        ...contributionData,
+        id: `contribution-${Date.now()}-${Math.random()}`,
+        timestamp: new Date(),
+      }
+      set((state) => ({
+        pots: state.pots.map((pot) =>
+          pot.id === contribution.potId
+            ? { ...pot, contributions: [...pot.contributions, contribution] }
+            : pot
+        ),
+      }))
+    } catch (error) {
+      console.error('Failed to add contribution to database:', error)
+      throw error
     }
-    set((state) => ({
-      pots: state.pots.map((pot) =>
-        pot.id === contribution.potId
-          ? { ...pot, contributions: [...pot.contributions, contribution] }
-          : pot
-      ),
-    }))
-    const pot = get().getPotById(contribution.potId)
-    get().addActivity({
-      type: 'contribution',
-      userId: contribution.contributorAddress,
-      potId: contribution.potId,
-      potName: pot?.name,
-      amount: contribution.amount,
-      currency: contribution.currency,
-    })
   },
-  releasePot: (potId, releasedBy) => {
-    set((state) => ({
-      pots: state.pots.map((pot) =>
-        pot.id === potId
-          ? { ...pot, isReleased: true, releasedAt: new Date(), releasedBy }
-          : pot
-      ),
-    }))
-    const pot = get().getPotById(potId)
-    get().addActivity({
-      type: 'release',
-      userId: releasedBy,
-      potId,
-      potName: pot?.name,
-    })
+  releasePot: async (potId, releasedBy, transactionSignature) => {
+    try {
+      // Call backend API to release pot
+      await import('../api/pots').then(api =>
+        api.releasePot(potId, releasedBy, transactionSignature)
+      )
+
+      // Update local state
+      set((state) => ({
+        pots: state.pots.map((pot) =>
+          pot.id === potId
+            ? { ...pot, isReleased: true, releasedAt: new Date(), releasedBy }
+            : pot
+        ),
+      }))
+    } catch (error) {
+      console.error('Failed to release pot in database:', error)
+      throw error
+    }
   },
   getPotById: (potId) => {
     return get().pots.find((p) => p.id === potId)
@@ -905,18 +942,22 @@ export const useAppStore = create<AppStore>((set, get) => {
 
   // Activity
   activities: [],
-  addActivity: (activityData) => {
-    const activity: Activity = {
-      ...activityData,
-      id: `activity-${Date.now()}-${Math.random()}`,
-      timestamp: new Date(),
+  fetchActivities: async (userAddress) => {
+    try {
+      const activities = await import('../api/activities').then(api =>
+        userAddress ? api.getActivitiesForUser(userAddress) : api.getAllActivities()
+      )
+
+      // Convert API response (string dates) to local format (Date objects)
+      const activitiesWithDates = activities.map(a => ({
+        ...a,
+        timestamp: new Date(a.timestamp),
+      }))
+
+      set({ activities: activitiesWithDates })
+    } catch (error) {
+      console.error('Failed to fetch activities:', error)
     }
-    set((state) => ({
-      activities: [activity, ...state.activities],
-    }))
-  },
-  getActivitiesForUser: (userAddress) => {
-    return get().activities.filter((activity) => activity.userId === userAddress)
   },
   setActivities: (activities) => {
     set({ activities })

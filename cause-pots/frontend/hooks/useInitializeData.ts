@@ -40,7 +40,7 @@ export function useInitializeData(userAddress?: string) {
             console.error('Failed to load friends:', err)
             throw err
           }),
-          getActivitiesForUser(userAddress).catch((err) => {
+          getActivitiesForUser(userAddress!).catch((err) => {
             console.error('Failed to load activities:', err)
             throw err
           }),

@@ -2,11 +2,15 @@ import React, { useMemo, useState } from 'react'
 import { Alert, Platform, ScrollView, StyleSheet, TouchableOpacity, useColorScheme, View, Text } from 'react-native'
 import { useRouter } from 'expo-router'
 import { LinearGradient } from 'expo-linear-gradient'
+import { PublicKey } from '@solana/web3.js'
 import { AppPage } from '@/components/app-page'
+import { AppText } from '@/components/app-text'
 import { Colors } from '@/constants/colors'
 import { useToast } from '@/components/toast/toast-provider'
 import { useMobileWalletAdapter } from '@wallet-ui/react-native-web3js'
 import { useAppStore, PotCategory } from '@/store/app-store'
+import { usePotProgram } from '@/hooks/use-pot-program'
+import { useCurrencyConversion } from '@/hooks/use-currency-conversion'
 import { CreatePotHeader } from '@/components/pots/create/CreatePotHeader'
 import { OverviewSection } from '@/components/pots/create/OverviewSection'
 import { GoalSection } from '@/components/pots/create/GoalSection'
@@ -36,6 +40,8 @@ export default function CreatePotScreen() {
   const { account } = useMobileWalletAdapter()
   const { friends, createPot } = useAppStore()
   const { showToast } = useToast()
+  const { createPot: createPotOnChain, isLoading: isCreatingOnChain, programService } = usePotProgram()
+  const { solPrice, usdToSol } = useCurrencyConversion()
 
   const palette = useMemo(
     () => ({
@@ -83,6 +89,7 @@ export default function CreatePotScreen() {
   const [currency, setCurrency] = useState<'SOL' | 'USDC'>('SOL')
   const [category, setCategory] = useState<PotCategory>('Goal')
   const [contributors, setContributors] = useState<Set<string>>(new Set())
+  const [signersRequired, setSignersRequired] = useState(1)
 
   const [targetDate, setTargetDate] = useState(getDefaultTargetDateString)
   const [showPicker, setShowPicker] = useState(false)
@@ -93,6 +100,8 @@ export default function CreatePotScreen() {
   })
   const isIOS = Platform.OS === 'ios'
 
+  const { fetchActivities } = useAppStore()
+
   const ensureFuture = (date: Date) => {
     const min = tomorrow()
     return date.getTime() < min.getTime() ? min : date
@@ -101,6 +110,14 @@ export default function CreatePotScreen() {
   const numAmount = parseFloat(amount)
   const dateObj = new Date(targetDate)
 
+  // Calculate SOL equivalent if USDC is selected
+  const solEquivalent = useMemo(() => {
+    if (currency === 'USDC' && !isNaN(numAmount) && numAmount > 0) {
+      return usdToSol(numAmount)
+    }
+    return numAmount
+  }, [currency, numAmount, usdToSol])
+
   const valid =
     name.trim().length > 0 &&
     !isNaN(numAmount) &&
@@ -108,7 +125,9 @@ export default function CreatePotScreen() {
     !isNaN(dateObj.getTime()) &&
     dateObj > new Date() &&
     contributors.size > 0 &&
-    category !== undefined
+    category !== undefined &&
+    signersRequired > 0 &&
+    signersRequired <= contributors.size + 1
 
   const applyDate = (d: Date) => {
     const n = ensureFuture(d)
@@ -133,31 +152,89 @@ export default function CreatePotScreen() {
       return next
     })
 
-  const create = () => {
+  const create = async () => {
     if (!account) return Alert.alert('Connect wallet', 'Please connect wallet.')
     if (!valid) return Alert.alert('Invalid', 'Fill required fields properly.')
 
-    const uniqueContributors = new Set([account.address, ...Array.from(contributors)])
-    const allContributors = Array.from(uniqueContributors)
+    try {
+      const creatorAddress = account.publicKey.toBase58()
+      const uniqueContributors = new Set([creatorAddress, ...Array.from(contributors)])
+      const allContributors = Array.from(uniqueContributors)
 
-    createPot({
-      name: name.trim(),
-      description: description.trim() || undefined,
-      creatorAddress: account.address,
-      targetAmount: numAmount,
-      targetDate: new Date(targetDate),
-      currency,
-      category,
-      contributors: allContributors,
-    })
+      // Calculate unlock days from target date
+      const now = new Date()
+      const target = new Date(targetDate)
+      const unlockDays = Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
 
-    showToast({
-      title: 'Pot created',
-      message: `${name.trim()} is ready to fund`,
-      type: 'success',
-    })
+      // Create pot on blockchain - always use SOL amount
+      // If USDC is selected, solEquivalent contains the converted SOL amount
+      const targetAmountInSol = currency === 'USDC' ? solEquivalent : numAmount
 
-    router.back()
+      const { signature, potPubkey } = await createPotOnChain({
+        name: name.trim(),
+        description: description.trim() || '',
+        targetAmount: targetAmountInSol,
+        unlockDays: Math.max(unlockDays, 1), // Minimum 1 day
+        signersRequired, // Use user-specified value
+      })
+
+      // Close any open modals first
+      setShowPicker(false)
+      setShowCustomPicker(false)
+
+      // Calculate unlock timestamp for backend
+      const unlockTimestamp = Math.floor(new Date(targetDate).getTime() / 1000)
+
+      // Get vault PDA
+      const [vaultPDA] = programService.getVaultPDA(new PublicKey(potPubkey))
+
+      // Save to backend database via store
+      // Store the display amount (USD if USDC selected, SOL if SOL selected)
+      // But note that blockchain always uses SOL
+      await createPot({
+        name: name.trim(),
+        description: description.trim() || undefined,
+        creatorAddress,
+        potPubkey, // Store the blockchain PDA
+        vaultPubkey: vaultPDA.toBase58(), // Store vault PDA
+        targetAmount: numAmount, // Store original display amount
+        targetDate: new Date(targetDate),
+        unlockTimestamp, // Unix timestamp
+        currency, // Store selected currency for display
+        category,
+        signersRequired,
+        signatures: [],
+        recipientAddress: creatorAddress, // Default recipient is creator
+        contributors: allContributors,
+        transactionSignature: signature, // Store blockchain tx signature
+      })
+
+      // Refetch activities to include the new pot creation activity with tx signature
+      if (account) {
+        await fetchActivities(account.publicKey.toBase58())
+      }
+
+      // Use requestAnimationFrame to ensure all state updates complete
+      requestAnimationFrame(() => {
+        router.back()
+
+        // Show toast after navigation
+        setTimeout(() => {
+          showToast({
+            title: 'Pot created',
+            message: `${name.trim()} is ready to fund`,
+            type: 'success',
+          })
+        }, 200)
+      })
+    } catch (error) {
+      console.error('Error creating pot:', error)
+      showToast({
+        title: 'Failed to create pot',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        type: 'error',
+      })
+    }
   }
 
   if (!account) {
@@ -216,6 +293,8 @@ export default function CreatePotScreen() {
               isDark={isDark}
               onAmountChange={setAmount}
               onCurrencyChange={setCurrency}
+              solEquivalent={currency === 'USDC' ? solEquivalent : undefined}
+              solPrice={solPrice || undefined}
             />
 
             <CategorySelector
@@ -233,19 +312,75 @@ export default function CreatePotScreen() {
               onToggleContributor={toggleContributor}
             />
 
+            {/* Signers Required Section */}
+            <View style={[styles.card, cardStyle]}>
+              <AppText style={[styles.sectionTitle, { color: palette.text }]}>
+                Multi-Signature Release
+              </AppText>
+              <AppText style={[styles.sectionSubtitle, { color: palette.textSecondary }]}>
+                How many contributors must approve to release funds?
+              </AppText>
+
+              <View style={styles.signersRow}>
+                {[1, 2, 3, 'all'].map((option) => {
+                  const totalCount = contributors.size + 1
+                  const value = option === 'all' ? totalCount : option as number
+                  const isSelected = signersRequired === value
+                  const label = option === 'all' ? `All (${totalCount})` : `${option}`
+                  const isDisabled = value > totalCount
+
+                  return (
+                    <TouchableOpacity
+                      key={option}
+                      style={[
+                        styles.signerOption,
+                        {
+                          backgroundColor: isSelected ? palette.accent : palette.surfaceMuted,
+                          borderColor: isSelected ? palette.accent : palette.border,
+                        },
+                        isDisabled && styles.signerOptionDisabled,
+                      ]}
+                      onPress={() => !isDisabled && setSignersRequired(value)}
+                      disabled={isDisabled}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={[
+                          styles.signerOptionText,
+                          {
+                            color: isSelected ? '#041015' : isDisabled ? palette.textSecondary : palette.text,
+                          },
+                        ]}
+                      >
+                        {label}
+                      </Text>
+                    </TouchableOpacity>
+                  )
+                })}
+              </View>
+
+              {signersRequired > contributors.size + 1 && (
+                <AppText style={[styles.warningText, { color: '#FF6B6B' }]}>
+                  Not enough contributors selected
+                </AppText>
+              )}
+            </View>
+
             <TouchableOpacity
               style={[styles.primaryButtonWrapper, { shadowColor: palette.accent }]}
               onPress={create}
               activeOpacity={0.9}
-              disabled={!valid}
+              disabled={!valid || isCreatingOnChain}
             >
               <LinearGradient
                 colors={[palette.accent, palette.accentSecondary]}
                 start={{ x: 0, y: 0.5 }}
                 end={{ x: 1, y: 0.5 }}
-                style={[styles.primaryButton, { opacity: valid ? 1 : 0.5 }]}
+                style={[styles.primaryButton, { opacity: valid && !isCreatingOnChain ? 1 : 0.5 }]}
               >
-                <Text style={styles.primaryButtonText}>Create pot</Text>
+                <Text style={styles.primaryButtonText}>
+                  {isCreatingOnChain ? 'Creating...' : 'Create pot'}
+                </Text>
               </LinearGradient>
             </TouchableOpacity>
           </ScrollView>
@@ -312,5 +447,45 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     letterSpacing: -0.2,
+  },
+  card: {
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  sectionSubtitle: {
+    fontSize: 13,
+    marginBottom: 16,
+  },
+  signersRow: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  signerOption: {
+    flex: 1,
+    minWidth: 60,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  signerOptionDisabled: {
+    opacity: 0.4,
+  },
+  signerOptionText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  warningText: {
+    fontSize: 12,
+    marginTop: 8,
   },
 })

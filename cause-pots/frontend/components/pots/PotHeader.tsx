@@ -6,7 +6,7 @@ interface PotHeaderProps {
   potName: string
   colors: any
   onBack: () => void
-  onEdit: () => void
+  onEdit?: () => void
 }
 
 export function PotHeader({ potName, colors, onBack, onEdit }: PotHeaderProps) {
@@ -18,9 +18,13 @@ export function PotHeader({ potName, colors, onBack, onEdit }: PotHeaderProps) {
       <AppText type="title" style={styles.headerTitle}>
         {potName}
       </AppText>
-      <TouchableOpacity onPress={onEdit}>
-        <Text style={[styles.editButton, { color: colors.accentGreen }]}>Edit</Text>
-      </TouchableOpacity>
+      {onEdit ? (
+        <TouchableOpacity onPress={onEdit}>
+          <Text style={[styles.editButton, { color: colors.accentGreen }]}>Edit</Text>
+        </TouchableOpacity>
+      ) : (
+        <View style={styles.placeholder} />
+      )}
     </View>
   )
 }
@@ -47,6 +51,9 @@ const styles = StyleSheet.create({
   editButton: {
     fontSize: 15,
     fontWeight: '600',
+  },
+  placeholder: {
+    width: 40,
   },
 })
 

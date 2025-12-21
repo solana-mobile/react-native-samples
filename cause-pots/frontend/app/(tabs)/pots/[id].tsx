@@ -373,11 +373,15 @@ export default function PotDetailsScreen() {
         potName={pot.name}
         colors={colors}
         onBack={() => router.back()}
-        onEdit={() => {
-          setEditName(pot.name)
-          setEditDescription(pot.description || '')
-          setShowEditModal(true)
-        }}
+        onEdit={
+          !pot.isReleased
+            ? () => {
+                setEditName(pot.name)
+                setEditDescription(pot.description || '')
+                setShowEditModal(true)
+              }
+            : undefined
+        }
       />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>

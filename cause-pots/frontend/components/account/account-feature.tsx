@@ -135,14 +135,7 @@ export function AccountFeature() {
                 <MaterialIcons name="chevron-left" size={20} color={colors.text} />
               </TouchableOpacity>
               <AppText style={[styles.heroTitle, { color: colors.text }]}>Account</AppText>
-              <TouchableOpacity
-                style={[
-                  styles.navButton,
-                  { backgroundColor: isDark ? colors.surfaceMuted : '#FFFFFF' },
-                ]}
-              >
-                <MaterialIcons name="account-circle" size={18} color={colors.text} />
-              </TouchableOpacity>
+              <View style={{ width: 38 }} />
             </View>
           </View>
           <View style={[styles.heroCard, { backgroundColor: colors.gradientMint[0] }]}>

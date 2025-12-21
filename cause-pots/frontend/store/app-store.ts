@@ -77,6 +77,7 @@ interface AppStore {
   getPotById: (potId: string) => Pot | undefined
   getUserPots: (userAddress: string) => Pot[]
   setPots: (pots: Pot[]) => void
+  refreshPot: (potId: string) => Promise<void>
 
   activities: Activity[]
   fetchActivities: (userAddress?: string) => Promise<void>
@@ -938,6 +939,37 @@ export const useAppStore = create<AppStore>((set, get) => {
   },
   setPots: (pots) => {
     set({ pots })
+  },
+  refreshPot: async (potId: string) => {
+    try {
+      const potData = await import('../api/pots').then(api =>
+        api.getPotById(potId)
+      )
+
+      if (!potData) {
+        console.error('Pot not found in backend')
+        return
+      }
+
+      // Convert API response (string dates) to local format (Date objects)
+      const pot: Pot = {
+        ...potData,
+        targetDate: new Date(potData.targetDate),
+        createdAt: new Date(potData.createdAt),
+        releasedAt: potData.releasedAt ? new Date(potData.releasedAt) : undefined,
+        contributions: potData.contributions.map(c => ({
+          ...c,
+          timestamp: new Date(c.timestamp),
+        })),
+      }
+
+      // Update the pot in the store
+      set((state) => ({
+        pots: state.pots.map((p) => (p.id === potId ? pot : p)),
+      }))
+    } catch (error) {
+      console.error('Failed to refresh pot from backend:', error)
+    }
   },
 
   // Activity

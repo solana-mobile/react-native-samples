@@ -467,7 +467,7 @@ router.delete('/:id/contributions/:contributionId', async (req: Request, res: Re
 router.post('/:id/sign', async (req: Request, res: Response) => {
   try {
     const { id } = req.params
-    const { signerAddress } = req.body
+    const { signerAddress, transactionSignature } = req.body
 
     if (!signerAddress) {
       res.status(400).json({ error: 'signerAddress is required' })
@@ -523,9 +523,9 @@ router.post('/:id/sign', async (req: Request, res: Response) => {
 
     // Create activity for sign_release
     await db.run(
-      `INSERT INTO activities (id, type, timestamp, user_id, pot_id)
-       VALUES (?, ?, ?, ?, ?)`,
-      [uuidv4(), 'sign_release', now, signer.id, id]
+      `INSERT INTO activities (id, type, timestamp, user_id, pot_id, transaction_signature)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [uuidv4(), 'sign_release', now, signer.id, id, transactionSignature]
     )
 
     res.json({ success: true, signatures })

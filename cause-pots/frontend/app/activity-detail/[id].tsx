@@ -25,6 +25,8 @@ export default function ActivityDetailScreen() {
         return 'cash'
       case 'release':
         return 'checkmark-done-circle'
+      case 'sign_release':
+        return 'create-outline'
       case 'friend_added':
         return 'person-add'
       default:
@@ -40,6 +42,8 @@ export default function ActivityDetailScreen() {
         return '#3B82F6' // Blue
       case 'release':
         return '#8B5CF6' // Purple
+      case 'sign_release':
+        return '#F59E0B' // Amber
       case 'friend_added':
         return '#F59E0B' // Amber
       default:
@@ -55,6 +59,8 @@ export default function ActivityDetailScreen() {
         return 'Contribution Made'
       case 'release':
         return 'Funds Released'
+      case 'sign_release':
+        return 'Signed for Release'
       case 'friend_added':
         return 'Friend Added'
       default:

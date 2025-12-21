@@ -30,7 +30,7 @@ export default function PotDetailsScreen() {
   const isDark = colorScheme === 'dark'
   const colors = Colors[isDark ? 'dark' : 'light']
   const { account, connection } = useMobileWalletAdapter()
-  const { getPotById, addContribution, releasePot, updatePot, addContributorToPot, friends, fetchActivities } = useAppStore()
+  const { getPotById, addContribution, releasePot, updatePot, addContributorToPot, friends, fetchActivities, refreshPot } = useAppStore()
   const { showToast } = useToast()
   const {
     contribute: contributeOnChain,
@@ -170,40 +170,16 @@ export default function PotDetailsScreen() {
         return
       }
 
-      // Build the transaction first
-      const tx = await programService.buildSignReleaseTx({
-        potPubkey: new PublicKey(potPubkey),
-        signer: account.publicKey,
-      })
-
-      // Get latest blockhash
-      const { blockhash } = await connection.getLatestBlockhash()
-      tx.recentBlockhash = blockhash
-      tx.feePayer = account.publicKey
-
-      // Simulate transaction to see errors
-      console.log('🔍 Simulating sign release transaction...')
-      const simulation = await connection.simulateTransaction(tx)
-
-      if (simulation.value.err) {
-        console.error('❌ Simulation failed:', JSON.stringify(simulation.value, null, 2))
-        Alert.alert(
-          'Simulation Failed',
-          `Error: ${JSON.stringify(simulation.value.err)}\n\nLogs:\n${simulation.value.logs?.join('\n') || 'No logs'}`
-        )
-        return
-      }
-
-      console.log('✅ Simulation successful!')
-      console.log('Logs:', simulation.value.logs?.join('\n'))
-
-      // If simulation passed, proceed with actual transaction
+      // Sign the release transaction
       const signature = await signReleaseOnChain(potPubkey)
 
       // Update backend with signature
       await import('@/api/pots').then(api =>
-        api.signPotRelease(pot.id, userAddress)
+        api.signPotRelease(pot.id, userAddress, signature)
       )
+
+      // Refetch pot data to get updated signatures
+      await refreshPot(pot.id)
 
       // Refetch activities to include the new sign_release activity
       await fetchActivities(userAddress)
@@ -213,9 +189,6 @@ export default function PotDetailsScreen() {
         message: `Your signature has been recorded (${currentSignatures + 1}/${requiredSignatures})`,
         type: 'success',
       })
-
-      // Reload pot to get updated signatures
-      router.replace(`/pots/${pot.id}`)
     } catch (error) {
       console.error('Error signing release:', error)
       showToast({

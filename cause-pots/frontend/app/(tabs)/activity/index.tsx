@@ -45,6 +45,7 @@ export default function ActivityScreen() {
       case 'pot_created': return 'savings';
       case 'contribution': return 'account-balance-wallet';
       case 'release': return 'check-circle';
+      case 'sign_release': return 'edit';
       case 'friend_added': return 'person-add';
       default: return 'notifications';
     }
@@ -55,6 +56,7 @@ export default function ActivityScreen() {
       case 'pot_created':
       case 'contribution': return palette.accent;
       case 'release':
+      case 'sign_release':
       case 'friend_added': return palette.accentSecondary;
       default: return palette.textSecondary;
     }
@@ -70,6 +72,7 @@ export default function ActivityScreen() {
       case 'pot_created': return { primary: `${userName} created`, secondary: activity.potName || 'a pot' };
       case 'contribution': return { primary: `${userName} contributed`, secondary: `${activity.amount?.toFixed(2)} ${activity.currency} to ${activity.potName || 'a pot'}` };
       case 'release': return { primary: `${userName} released`, secondary: activity.potName || 'a pot' };
+      case 'sign_release': return { primary: `${userName} signed for release`, secondary: activity.potName || 'a pot' };
       case 'friend_added': return { primary: `${userName} added`, secondary: friendName || 'a friend' };
       default: return { primary: 'Unknown activity', secondary: '' };
     }

@@ -127,18 +127,29 @@ export async function removeContribution(potId: string, contributionId: string):
   }
 }
 
-export async function signPotRelease(potId: string, signerAddress: string): Promise<void> {
+export async function signPotRelease(potId: string, signerAddress: string, transactionSignature?: string): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/api/pots/${potId}/sign`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ signerAddress }),
+    body: JSON.stringify({ signerAddress, transactionSignature }),
   })
 
   if (!response.ok) {
-    throw new Error('Failed to sign pot release')
+    const errorText = await response.text()
+    console.error('❌ signPotRelease failed:', {
+      status: response.status,
+      statusText: response.statusText,
+      body: errorText,
+      potId,
+      signerAddress,
+    })
+    throw new Error(`Failed to sign pot release: ${response.status} ${errorText}`)
   }
+
+  const result = await response.json()
+  console.log('✅ signPotRelease success:', result)
 }
 
 export async function releasePot(potId: string, releasedBy: string, transactionSignature?: string): Promise<void> {

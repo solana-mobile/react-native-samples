@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 50,
     maxHeight: '80%',
   },
   modalTitle: {

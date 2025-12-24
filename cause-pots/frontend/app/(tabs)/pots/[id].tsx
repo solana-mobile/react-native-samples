@@ -19,6 +19,7 @@ import { PotCategory, useAppStore } from '@/store/app-store'
 import { usePotProgram } from '@/hooks/use-pot-program'
 import { useCurrencyConversion } from '@/hooks/use-currency-conversion'
 import { ellipsify } from '@/utils/ellipsify'
+import { displayAddress } from '@/utils/display-address'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import React, { useCallback, useState } from 'react'
 import { ScrollView, StyleSheet, TouchableOpacity, useColorScheme } from 'react-native'
@@ -327,8 +328,8 @@ export default function PotDetailsScreen() {
 
     addContributorToPot(pot.id, friendAddress)
     setShowAddContributorModal(false)
-    const friendName =
-      friends.find((f) => f.address === friendAddress)?.displayName || ellipsify(friendAddress, 6)
+    const friend = friends.find((f) => f.address === friendAddress)
+    const friendName = friend?.displayName || displayAddress(friendAddress, friend?.domain, 6)
     showToast({
       title: 'Contributor added',
       message: `${friendName} can now pitch in`,
@@ -340,9 +341,17 @@ export default function PotDetailsScreen() {
     (address: string) => {
       if (address === pot.creatorAddress) return 'Creator'
       const friend = friends.find((f) => f.address === address)
-      return friend?.displayName || ellipsify(address, 8)
+      return friend?.displayName || displayAddress(address, friend?.domain, 8)
     },
     [pot.creatorAddress, friends]
+  )
+
+  const getContributorDomain = useCallback(
+    (address: string) => {
+      const friend = friends.find((f) => f.address === address)
+      return friend?.domain
+    },
+    [friends]
   )
 
   const getCategoryIcon = useCallback((category: PotCategory) => {
@@ -440,6 +449,7 @@ export default function PotDetailsScreen() {
             contributors={pot.contributors}
             creatorAddress={pot.creatorAddress}
             getContributorName={getContributorName}
+            getContributorDomain={getContributorDomain}
             colors={colors}
           />
         )}

@@ -36,13 +36,13 @@ export function AddFriendModal({
         <View style={[styles.modalCard, cardStyle]}>
           <AppText style={[styles.modalTitle, { color: palette.text }]}>Add friend</AppText>
           <AppText style={[styles.modalSubtitle, { color: palette.textSecondary }]}>
-            Enter a Solana public key address.
+            Enter a Solana address or .skr domain.
           </AppText>
 
           <TextInput
             value={addressInput}
             onChangeText={onAddressChange}
-            placeholder="Address (e.g. 7xKX...)"
+            placeholder="Address or domain (e.g. alice.skr)"
             placeholderTextColor={palette.textSecondary}
             style={[
               styles.addressInput,

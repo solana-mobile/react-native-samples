@@ -2,7 +2,7 @@ import React from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Modal, Pressable, ScrollView } from 'react-native'
 import { AppText } from '@/components/app-text'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
-import { ellipsify } from '@/utils/ellipsify'
+import { displayAddress } from '@/utils/display-address'
 import { PotCategory } from '@/store/app-store'
 
 interface AddToPotModalProps {
@@ -44,7 +44,7 @@ export function AddToPotModal({
           {availablePots.length === 0 ? (
             <View style={styles.emptyPotsContainer}>
               <AppText style={[styles.emptyPotsText, { color: palette.textSecondary }]}>
-                {friend.displayName || ellipsify(friend.address, 8)} is already in all your pots.
+                {friend.displayName || displayAddress(friend.address, friend.domain, 8)} is already in all your pots.
               </AppText>
             </View>
           ) : (

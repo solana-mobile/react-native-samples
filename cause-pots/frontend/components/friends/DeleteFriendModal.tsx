@@ -1,7 +1,7 @@
 import React from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Modal, Pressable } from 'react-native'
 import { AppText } from '@/components/app-text'
-import { ellipsify } from '@/utils/ellipsify'
+import { displayAddress } from '@/utils/display-address'
 
 interface DeleteFriendModalProps {
   visible: boolean
@@ -27,7 +27,7 @@ export function DeleteFriendModal({ visible, friend, palette, onClose, onConfirm
               Delete Friend?
             </AppText>
             <AppText style={[styles.deleteModalSubtitle, { color: palette.textSecondary }]}>
-              This will remove {friend.displayName || ellipsify(friend.address, 8)} from your friends list. This action cannot be undone.
+              This will remove {friend.displayName || displayAddress(friend.address, friend.domain, 8)} from your friends list. This action cannot be undone.
             </AppText>
           </View>
           <View style={[styles.deleteModalActions, { borderTopColor: palette.border }]}>

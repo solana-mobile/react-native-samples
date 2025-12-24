@@ -1,10 +1,10 @@
 import React from 'react'
 import { View, StyleSheet, ScrollView, TouchableOpacity, Text } from 'react-native'
 import { AppText } from '@/components/app-text'
-import { ellipsify } from '@/utils/ellipsify'
+import { displayAddress } from '@/utils/display-address'
 
 interface ContributorSelectorProps {
-  friends: Array<{ id: string; address: string; displayName?: string }>
+  friends: Array<{ id: string; address: string; displayName?: string; domain?: string }>
   selectedContributors: Set<string>
   palette: any
   cardStyle: any
@@ -76,14 +76,20 @@ export function ContributorSelector({
                   </Text>
                 </View>
                 <View style={styles.friendText}>
-                  {friend.displayName && (
+                  {friend.displayName ? (
+                    <>
+                      <AppText style={[styles.friendName, { color: palette.text }]} numberOfLines={1}>
+                        {friend.displayName}
+                      </AppText>
+                      <AppText style={[styles.friendAddress, { color: palette.textSecondary }]} numberOfLines={1}>
+                        {displayAddress(friend.address, friend.domain, 6)}
+                      </AppText>
+                    </>
+                  ) : (
                     <AppText style={[styles.friendName, { color: palette.text }]} numberOfLines={1}>
-                      {friend.displayName}
+                      {displayAddress(friend.address, friend.domain, 8)}
                     </AppText>
                   )}
-                  <AppText style={[styles.friendAddress, { color: palette.textSecondary }]} numberOfLines={1}>
-                    {ellipsify(friend.address, 6)}
-                  </AppText>
                 </View>
                 {isSelected && <Text style={[styles.checkmarkGlyph, { color: '#041015' }]}>✓</Text>}
               </TouchableOpacity>

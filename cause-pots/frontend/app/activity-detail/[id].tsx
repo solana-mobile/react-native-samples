@@ -7,15 +7,17 @@ import { useAppTheme } from '@/hooks/use-app-theme'
 import * as Clipboard from 'expo-clipboard'
 import { useToast } from '@/components/toast/toast-provider'
 import { useAppStore, ActivityType } from '@/store/app-store'
+import { displayAddress } from '@/utils/display-address'
 
 export default function ActivityDetailScreen() {
   const router = useRouter()
   const { id } = useLocalSearchParams<{ id: string }>()
   const { palette, isDark } = useAppTheme()
   const { showToast } = useToast()
-  const { activities } = useAppStore()
+  const { activities, getFriendByAddress } = useAppStore()
 
   const activity = activities.find((a) => a.id === id)
+  const friend = activity?.friendAddress ? getFriendByAddress(activity.friendAddress) : null
 
   const getActivityIcon = (type: ActivityType): keyof typeof Ionicons.glyphMap => {
     switch (type) {
@@ -196,7 +198,7 @@ export default function ActivityDetailScreen() {
               Friend Added
             </Text>
             <Text style={[styles.sectionContent, { color: palette.text }]}>
-              {activity.friendAddress.slice(0, 8)}...{activity.friendAddress.slice(-8)}
+              {friend?.displayName || displayAddress(activity.friendAddress, friend?.domain, 8)}
             </Text>
           </View>
         )}

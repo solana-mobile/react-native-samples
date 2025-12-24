@@ -1,11 +1,12 @@
 import { db } from '../src/db/database'
 import { v4 as uuidv4 } from 'uuid'
 import dotenv from 'dotenv'
+import { resolveAddressToDomain } from '../src/utils/domain'
 
 dotenv.config()
 
 const dummyUsersData = [
-  { pubkey: '7WKaHxMy54Mn5JPpETqiwwkcyJLmkcsrjwfvUnDqPpdN', name: 'Alice' },
+  { pubkey: '12NDLpDaZAdy2quA7BytNFv3zTekD4nQ6s52gvzyp6qn', name: 'Alice' },
   { pubkey: '3Q9PWRpFA6mavhMf2J49sYJvBP1dEbBrZT8GRu8kSK9i', name: 'Bob' },
   { pubkey: 'MbWYUcFtq7Bn5YWuYRdguP1rj8jCpX99nHJF3x83FQt', name: 'Charlie' },
 ]
@@ -34,13 +35,22 @@ async function seedDatabase() {
       }
 
       const userId = uuidv4()
+
+      // Try to resolve .skr domain for this address
+      console.log(`   🔍 Checking for .skr domain for ${userData.name}...`)
+      const domain = await resolveAddressToDomain(userData.pubkey)
+
       await db.run(
-        'INSERT INTO users (id, pubkey, address, name, is_profile_complete, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [userId, userData.pubkey, userData.pubkey, userData.name, 1, now, now]
+        'INSERT INTO users (id, pubkey, address, name, domain, is_profile_complete, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [userId, userData.pubkey, userData.pubkey, userData.name, domain, 1, now, now]
       )
 
       users.push({ id: userId, pubkey: userData.pubkey, address: userData.pubkey, name: userData.name })
-      console.log(`   ✅ Created user "${userData.name}"`)
+      if (domain) {
+        console.log(`   ✅ Created user "${userData.name}" with domain ${domain}`)
+      } else {
+        console.log(`   ✅ Created user "${userData.name}" (no .skr domain)`)
+      }
     }
 
     console.log(`\n✅ Database seeding complete! 🎉\n`)

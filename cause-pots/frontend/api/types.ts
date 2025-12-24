@@ -5,6 +5,7 @@ export type User = {
   pubkey: string
   address: string
   name?: string
+  domain?: string
   avatarUri?: string
   isProfileComplete: boolean
   createdAt: string
@@ -15,6 +16,7 @@ export type Friend = {
   id: string
   publicKey: string
   address: string
+  domain?: string
   displayName?: string
   addedAt: string
 }

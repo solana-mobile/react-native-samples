@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express'
 import { v4 as uuidv4 } from 'uuid'
 import { db } from '../db/database'
 import { AddFriendRequest, UpdateFriendRequest } from '../types'
+import { isDomainFormat } from '../utils/domain'
 
 const router = Router()
 
@@ -15,16 +16,23 @@ router.post('/', async (req: Request, res: Response) => {
       return
     }
 
-    // Check if friend user exists in database
+    // Check if friend user exists in database by address or domain
+    // Normalize domain input (add .skr extension if not present for domain format)
+    const normalizedInput = isDomainFormat(friendData.address)
+      ? friendData.address.endsWith('.skr') ? friendData.address : `${friendData.address}.skr`
+      : friendData.address
+
     const friendUser = await db.get<any>(
-      'SELECT * FROM users WHERE address = ? OR pubkey = ?',
-      [friendData.address, friendData.address]
+      'SELECT * FROM users WHERE address = ? OR pubkey = ? OR domain = ?',
+      [normalizedInput, normalizedInput, normalizedInput]
     )
 
     if (!friendUser) {
       res.status(404).json({
         error: 'User not found',
-        message: 'The address you entered does not exist in our database. Please use an address from the seed data or create a user first.'
+        message: isDomainFormat(friendData.address)
+          ? 'No user found with this .skr domain. They may not have the app yet.'
+          : 'The address you entered does not exist in our database. They may not have the app yet.'
       })
       return
     }
@@ -84,6 +92,7 @@ router.post('/', async (req: Request, res: Response) => {
       id: friendshipId,
       publicKey: friendUser.pubkey,
       address: friendUser.address,
+      domain: friendUser.domain,
       displayName: friendData.displayName || friendUser.name,
       addedAt: now
     })
@@ -129,6 +138,7 @@ router.get('/', async (req: Request, res: Response) => {
       id: friend.friendship_id,
       publicKey: friend.pubkey,
       address: friend.address,
+      domain: friend.domain,
       displayName: friend.custom_name || friend.name,
       addedAt: friend.added_at
     }))
@@ -162,6 +172,7 @@ router.get('/:id', async (req: Request, res: Response) => {
       id: friendship.friendship_id,
       publicKey: friendship.pubkey,
       address: friendship.address,
+      domain: friendship.domain,
       displayName: friendship.custom_name || friendship.name,
       addedAt: friendship.added_at
     })
@@ -202,6 +213,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
       id: friendship.friendship_id,
       publicKey: friendship.pubkey,
       address: friendship.address,
+      domain: friendship.domain,
       displayName: friendship.custom_name || friendship.name,
       addedAt: friendship.added_at
     })

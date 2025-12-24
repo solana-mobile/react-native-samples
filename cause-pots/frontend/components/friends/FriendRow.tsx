@@ -10,7 +10,7 @@ import Reanimated, {
 } from 'react-native-reanimated'
 import { AppText } from '@/components/app-text'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
-import { ellipsify } from '@/utils/ellipsify'
+import { displayAddress } from '@/utils/display-address'
 import { PotCategory } from '@/store/app-store'
 import { DeleteFriendModal } from './DeleteFriendModal'
 import { AddToPotModal } from './AddToPotModal'
@@ -210,12 +210,12 @@ export function FriendRow({
                       {friend.displayName}
                     </AppText>
                     <AppText style={[styles.friendAddress, { color: palette.textSecondary }]} numberOfLines={1}>
-                      {ellipsify(friend.address, 12)}
+                      {displayAddress(friend.address, friend.domain, 12)}
                     </AppText>
                   </>
                 ) : (
                   <AppText style={[styles.friendName, { color: palette.text }]} numberOfLines={1}>
-                    {ellipsify(friend.address, 16)}
+                    {displayAddress(friend.address, friend.domain, 16)}
                   </AppText>
                 )}
               </View>

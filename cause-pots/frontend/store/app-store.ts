@@ -5,6 +5,7 @@ export type Friend = {
   id: string
   publicKey: PublicKey
   address: string
+  domain?: string
   displayName?: string
   addedAt: Date
 }
@@ -63,7 +64,7 @@ export type Activity = {
 
 interface AppStore {
   friends: Friend[]
-  addFriend: (publicKey: PublicKey, address: string, displayName?: string) => void
+  addFriend: (publicKey: PublicKey, address: string, displayName?: string, domain?: string) => void
   removeFriend: (friendId: string) => void
   getFriendByAddress: (address: string) => Friend | undefined
   setFriends: (friends: Friend[]) => void
@@ -774,12 +775,13 @@ export const useAppStore = create<AppStore>((set, get) => {
   return {
     // Friends
     friends: [],
-  addFriend: (publicKey, address, displayName) => {
+  addFriend: (publicKey, address, displayName, domain) => {
     const friend: Friend = {
       id: `friend-${Date.now()}-${Math.random()}`,
       publicKey,
       address,
       displayName,
+      domain,
       addedAt: new Date(),
     }
     set((state) => ({

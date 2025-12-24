@@ -15,6 +15,7 @@ import { AppPage } from '@/components/app-page';
 import { useScrollContext } from '@/components/tab-bar/scroll-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { ellipsify } from '@/utils/ellipsify';
+import { displayAddress } from '@/utils/display-address';
 import { useRouter } from 'expo-router';
 import type { Activity } from '@/store/app-store';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -65,7 +66,7 @@ export default function ActivityScreen() {
   /* ---------- MESSAGE BUILDER ---------- */
   const getActivityMessage = useCallback((activity: Activity) => {
     const friend = activity.friendAddress ? getFriendByAddress(activity.friendAddress) : null;
-    const friendName = friend?.displayName || (activity.friendAddress ? ellipsify(activity.friendAddress, 8) : null);
+    const friendName = friend?.displayName || (activity.friendAddress ? displayAddress(activity.friendAddress, friend?.domain, 8) : null);
     const userName = activity.userName || (activity.userId ? ellipsify(activity.userId, 8) : 'Someone');
 
     switch (activity.type) {

@@ -1,12 +1,13 @@
 import React from 'react'
 import { View, StyleSheet, Text } from 'react-native'
 import { AppText } from '@/components/app-text'
-import { ellipsify } from '@/utils/ellipsify'
+import { displayAddress } from '@/utils/display-address'
 
 interface ContributorListProps {
   contributors: string[]
   creatorAddress: string
   getContributorName: (address: string) => string
+  getContributorDomain?: (address: string) => string | undefined
   colors: any
 }
 
@@ -14,6 +15,7 @@ export function ContributorList({
   contributors,
   creatorAddress,
   getContributorName,
+  getContributorDomain,
   colors,
 }: ContributorListProps) {
   return (
@@ -35,7 +37,7 @@ export function ContributorList({
               )}
             </View>
             <AppText style={[styles.listItemSubtext, { color: colors.textSecondary }]}>
-              {ellipsify(contributorAddress, 12)}
+              {displayAddress(contributorAddress, getContributorDomain?.(contributorAddress), 12)}
             </AppText>
           </View>
         </View>

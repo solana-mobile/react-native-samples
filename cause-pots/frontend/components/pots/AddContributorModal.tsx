@@ -1,11 +1,11 @@
 import React from 'react'
 import { View, StyleSheet, Text, TouchableOpacity, Modal, ScrollView } from 'react-native'
 import { AppText } from '@/components/app-text'
-import { ellipsify } from '@/utils/ellipsify'
+import { displayAddress } from '@/utils/display-address'
 
 interface AddContributorModalProps {
   visible: boolean
-  friends: Array<{ id: string; address: string; displayName?: string }>
+  friends: Array<{ id: string; address: string; displayName?: string; domain?: string }>
   existingContributors: string[]
   colors: any
   onClose: () => void
@@ -47,12 +47,18 @@ export function AddContributorModal({
                     </Text>
                   </View>
                   <View style={styles.friendOptionInfo}>
-                    {friend.displayName && (
-                      <AppText style={styles.friendOptionName}>{friend.displayName}</AppText>
+                    {friend.displayName ? (
+                      <>
+                        <AppText style={styles.friendOptionName}>{friend.displayName}</AppText>
+                        <AppText style={[styles.friendOptionAddress, { color: colors.textSecondary }]}>
+                          {displayAddress(friend.address, friend.domain, 12)}
+                        </AppText>
+                      </>
+                    ) : (
+                      <AppText style={styles.friendOptionName}>
+                        {displayAddress(friend.address, friend.domain, 12)}
+                      </AppText>
                     )}
-                    <AppText style={[styles.friendOptionAddress, { color: colors.textSecondary }]}>
-                      {ellipsify(friend.address, 12)}
-                    </AppText>
                   </View>
                 </TouchableOpacity>
               ))

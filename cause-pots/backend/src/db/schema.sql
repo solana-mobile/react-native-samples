@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS users (
     pubkey TEXT UNIQUE NOT NULL,
     address TEXT UNIQUE NOT NULL,
     name TEXT,
+    domain TEXT,
     avatar_uri TEXT,
     is_profile_complete INTEGER DEFAULT 0,
     created_at TEXT DEFAULT (datetime('now')),
@@ -89,6 +90,7 @@ CREATE TABLE IF NOT EXISTS activities (
 -- Create indexes for better query performance
 CREATE INDEX IF NOT EXISTS idx_users_pubkey ON users(pubkey);
 CREATE INDEX IF NOT EXISTS idx_users_address ON users(address);
+CREATE INDEX IF NOT EXISTS idx_users_domain ON users(domain);
 CREATE INDEX IF NOT EXISTS idx_pots_creator ON pots(creator_id);
 CREATE INDEX IF NOT EXISTS idx_pots_pubkey ON pots(pot_pubkey);
 CREATE INDEX IF NOT EXISTS idx_pots_created_at ON pots(created_at DESC);

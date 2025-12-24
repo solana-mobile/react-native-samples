@@ -2,6 +2,7 @@ import { useMobileWalletAdapter } from '@wallet-ui/react-native-web3js'
 import { AppText } from '@/components/app-text'
 import { useScrollContext } from '@/components/tab-bar/scroll-context'
 import { ellipsify } from '@/utils/ellipsify'
+import { displayAddress } from '@/utils/display-address'
 import { AppPage } from '@/components/app-page'
 import { AccountUiBalance } from '@/components/account/account-ui-balance'
 import { RefreshControl, ScrollView, StyleSheet, View, TouchableOpacity, Animated } from 'react-native'
@@ -190,7 +191,7 @@ export function AccountFeature() {
                     <AppText style={[styles.userName, { color: colors.textSecondary }]}>{user.name}</AppText>
                   )}
                   <AppText style={[styles.userAddress, { color: colors.textSecondary }]} numberOfLines={1}>
-                    {ellipsify(user.address, 16)}
+                    {displayAddress(user.address, user.domain, 16)}
                   </AppText>
                 </View>
               </View>

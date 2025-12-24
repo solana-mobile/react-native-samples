@@ -11,6 +11,7 @@ import { useToast } from '@/components/toast/toast-provider'
 import { useAppTheme } from '@/hooks/use-app-theme'
 import { useAppStore } from '@/store/app-store'
 import { ellipsify } from '@/utils/ellipsify'
+import { displayAddress } from '@/utils/display-address'
 import { addFriend as addFriendAPI } from '@/api/friends'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { PublicKey } from '@solana/web3.js'
@@ -73,11 +74,16 @@ export default function FriendsScreen() {
     }
 
     try {
-      const keyStr = addressInput.trim()
-      const publicKey = new PublicKey(keyStr)
-      const address = publicKey.toString()
+      const input = addressInput.trim()
 
-      const exists = friends.some((f) => f.address === address)
+      // Call backend API to add friend (supports both address and domain)
+      const friendData = await addFriendAPI({
+        currentUserAddress: user.address,
+        address: input,
+      })
+
+      // Check if already exists
+      const exists = friends.some((f) => f.address === friendData.address)
       if (exists) {
         showToast({
           title: 'Already added',
@@ -87,20 +93,15 @@ export default function FriendsScreen() {
         return
       }
 
-      // Call backend API to add friend
-      const friendData = await addFriendAPI({
-        currentUserAddress: user.address,
-        address,
-      })
-
       // Update local store with friend data from API response
-      addFriend(publicKey, address, friendData.displayName)
+      const publicKey = new PublicKey(friendData.address)
+      addFriend(publicKey, friendData.address, friendData.displayName, friendData.domain)
 
       setAddressInput('')
       setShowAddFriend(false)
       showToast({
         title: 'Friend added',
-        message: friendData.displayName || ellipsify(address, 12),
+        message: friendData.displayName || displayAddress(friendData.address, friendData.domain, 12),
         type: 'success',
       })
     } catch (error) {
@@ -116,7 +117,7 @@ export default function FriendsScreen() {
   const handleRemoveFriend = useCallback(
     (id: string, name?: string) => {
       const friend = friends.find((f) => f.id === id)
-      const friendName = friend?.displayName || name || ellipsify(friend?.address || id, 12)
+      const friendName = friend?.displayName || name || displayAddress(friend?.address || id, friend?.domain, 12)
       removeFriend(id)
       showToast({
         title: 'Friend removed',
@@ -142,10 +143,11 @@ export default function FriendsScreen() {
       }
 
       addContributorToPot(potId, friendAddress)
-      const friendName = friends.find((f) => f.address === friendAddress)?.displayName
+      const friend = friends.find((f) => f.address === friendAddress)
+      const friendName = friend?.displayName || displayAddress(friendAddress, friend?.domain, 10)
       showToast({
         title: 'Contributor added',
-        message: `${friendName || ellipsify(friendAddress, 10)} joined ${pot.name}`,
+        message: `${friendName} joined ${pot.name}`,
         type: 'success',
       })
     },
@@ -160,7 +162,8 @@ export default function FriendsScreen() {
     return friends.filter((f) => {
       const n = (f.displayName || '').toLowerCase()
       const a = f.address.toLowerCase()
-      return n.includes(q) || a.includes(q)
+      const d = (f.domain || '').toLowerCase()
+      return n.includes(q) || a.includes(q) || d.includes(q)
     })
   }, [friends, searchTerm])
 

@@ -44,7 +44,7 @@ export default function FriendsScreen() {
   const { user } = useAuth()
   const { scrollY, handleScroll } = useScrollContext()
 
-  const { friends, addFriend, removeFriend, pots, addContributorToPot } = useAppStore()
+  const { friends, addFriend, removeFriend } = useAppStore()
   const { showToast } = useToast()
 
   const [showAddFriend, setShowAddFriend] = useState(false)
@@ -126,32 +126,6 @@ export default function FriendsScreen() {
       })
     },
     [removeFriend, friends, showToast]
-  )
-
-  const handleAddToPot = useCallback(
-    (potId: string, friendAddress: string) => {
-      const pot = pots.find((p) => p.id === potId)
-      if (!pot) return
-
-      if (pot.contributors.includes(friendAddress)) {
-        showToast({
-          title: 'Already in this pot',
-          message: 'Pick another pot or contributor',
-          type: 'warning',
-        })
-        return
-      }
-
-      addContributorToPot(potId, friendAddress)
-      const friend = friends.find((f) => f.address === friendAddress)
-      const friendName = friend?.displayName || displayAddress(friendAddress, friend?.domain, 10)
-      showToast({
-        title: 'Contributor added',
-        message: `${friendName} joined ${pot.name}`,
-        type: 'success',
-      })
-    },
-    [addContributorToPot, friends, pots, showToast]
   )
 
   const filteredFriends = useMemo(() => {
@@ -242,8 +216,6 @@ export default function FriendsScreen() {
                     isDark={isDark}
                     cardStyle={cardStyle}
                     onRemove={handleRemoveFriend}
-                    onAddToPot={handleAddToPot}
-                    pots={pots}
                     avatarColor={getAvatarColor(friend.id)}
                     isLast={index === filteredFriends.length - 1}
                     accountAddress={account?.address}

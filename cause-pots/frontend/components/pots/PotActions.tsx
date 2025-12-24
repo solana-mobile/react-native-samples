@@ -15,7 +15,6 @@ interface PotActionsProps {
   onContribute: () => void
   onSignRelease: () => void
   onRelease: () => void
-  onAddContributor: () => void
 }
 
 export function PotActions({
@@ -32,7 +31,6 @@ export function PotActions({
   onContribute,
   onSignRelease,
   onRelease,
-  onAddContributor,
 }: PotActionsProps) {
   if (!isContributor) return null
 
@@ -78,16 +76,6 @@ export function PotActions({
             </TouchableOpacity>
           )}
         </>
-      )}
-
-      {/* Add Contributor button - only show if not released */}
-      {!isReleased && (
-        <TouchableOpacity
-          style={[styles.actionButton, { backgroundColor: colors.cardBackground, borderColor: colors.border, borderWidth: 1 }]}
-          onPress={onAddContributor}
-        >
-          <Text style={[styles.actionButtonText, { color: colors.text }]}>Add Contributor</Text>
-        </TouchableOpacity>
       )}
     </View>
   )

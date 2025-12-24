@@ -1,7 +1,6 @@
 import { AppPage } from '@/components/app-page'
 import { AppText } from '@/components/app-text'
 import { AppView } from '@/components/app-view'
-import { AddContributorModal } from '@/components/pots/AddContributorModal'
 import { AlertModal, AlertButton } from '@/components/pots/AlertModal'
 import { ContributeModal } from '@/components/pots/ContributeModal'
 import { ContributionList } from '@/components/pots/ContributionList'
@@ -32,7 +31,7 @@ export default function PotDetailsScreen() {
   const isDark = colorScheme === 'dark'
   const colors = Colors[isDark ? 'dark' : 'light']
   const { account, connection } = useMobileWalletAdapter()
-  const { getPotById, addContribution, releasePot, updatePot, addContributorToPot, friends, fetchActivities, refreshPot } = useAppStore()
+  const { getPotById, addContribution, releasePot, updatePot, friends, fetchActivities, refreshPot } = useAppStore()
   const { showToast } = useToast()
   const {
     contribute: contributeOnChain,
@@ -46,7 +45,6 @@ export default function PotDetailsScreen() {
 
   const [showContributeModal, setShowContributeModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
-  const [showAddContributorModal, setShowAddContributorModal] = useState(false)
   const [contributionAmount, setContributionAmount] = useState('')
   const [contributionCurrency, setContributionCurrency] = useState<'SOL' | 'USDC'>('SOL')
   const [editName, setEditName] = useState('')
@@ -316,27 +314,6 @@ export default function PotDetailsScreen() {
     })
   }
 
-  const handleAddContributor = (friendAddress: string) => {
-    if (pot.contributors.includes(friendAddress)) {
-      showToast({
-        title: 'Already in the pot',
-        message: 'This contributor is already part of the group',
-        type: 'warning',
-      })
-      return
-    }
-
-    addContributorToPot(pot.id, friendAddress)
-    setShowAddContributorModal(false)
-    const friend = friends.find((f) => f.address === friendAddress)
-    const friendName = friend?.displayName || displayAddress(friendAddress, friend?.domain, 6)
-    showToast({
-      title: 'Contributor added',
-      message: `${friendName} can now pitch in`,
-      type: 'success',
-    })
-  }
-
   const getContributorName = useCallback(
     (address: string) => {
       if (address === pot.creatorAddress) return 'Creator'
@@ -425,7 +402,6 @@ export default function PotDetailsScreen() {
           }}
           onSignRelease={handleSignRelease}
           onRelease={handleRelease}
-          onAddContributor={() => setShowAddContributorModal(true)}
         />
 
         <PotTabs
@@ -482,15 +458,6 @@ export default function PotDetailsScreen() {
         onNameChange={setEditName}
         onDescriptionChange={setEditDescription}
         onSubmit={() => handleEdit(editName || pot.name, editDescription || pot.description || '')}
-      />
-
-      <AddContributorModal
-        visible={showAddContributorModal}
-        friends={friends}
-        existingContributors={pot.contributors}
-        colors={colors}
-        onClose={() => setShowAddContributorModal(false)}
-        onSelectFriend={handleAddContributor}
       />
 
       <AlertModal

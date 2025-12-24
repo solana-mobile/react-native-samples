@@ -11,13 +11,10 @@ import Reanimated, {
 import { AppText } from '@/components/app-text'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { displayAddress } from '@/utils/display-address'
-import { PotCategory } from '@/store/app-store'
 import { DeleteFriendModal } from './DeleteFriendModal'
-import { AddToPotModal } from './AddToPotModal'
 
 const SWIPE_THRESHOLD = 30
 const DELETE_THRESHOLD = 25
-const ADD_TO_POT_THRESHOLD = 25
 
 interface FriendRowProps {
   friend: any
@@ -25,8 +22,6 @@ interface FriendRowProps {
   isDark: boolean
   cardStyle: any
   onRemove: (id: string, name?: string) => void
-  onAddToPot: (potId: string, friendAddress: string) => void
-  pots: any[]
   avatarColor: string
   isLast: boolean
   accountAddress?: string
@@ -39,8 +34,6 @@ export function FriendRow({
   isDark,
   cardStyle,
   onRemove,
-  onAddToPot,
-  pots,
   avatarColor,
   isLast,
   accountAddress,
@@ -48,44 +41,6 @@ export function FriendRow({
 }: FriendRowProps) {
   const translateX = useSharedValue(0)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [showAddToPotModal, setShowAddToPotModal] = useState(false)
-
-  const availablePots = useMemo(() => {
-    return pots.filter((pot) => !pot.contributors.includes(friend.address))
-  }, [pots, friend.address])
-
-  const getCategoryIcon = (category: PotCategory) => {
-    switch (category) {
-      case 'Goal': return 'flag'
-      case 'Emergency': return 'emergency'
-      case 'Bills': return 'receipt'
-      case 'Events': return 'event'
-      case 'Others': return 'category'
-      default: return 'savings'
-    }
-  }
-
-  const getCategoryColor = (category: PotCategory) => {
-    switch (category) {
-      case 'Goal': return '#22E1A2'
-      case 'Emergency': return '#FF6B6B'
-      case 'Bills': return '#4ECDC4'
-      case 'Events': return '#FFD93D'
-      case 'Others': return '#95A5A6'
-      default: return palette.accent
-    }
-  }
-
-  const getDaysLeft = (targetDate: Date) => {
-    const now = new Date()
-    const target = new Date(targetDate)
-    const diff = target.getTime() - now.getTime()
-    const days = Math.ceil(diff / (1000 * 60 * 60 * 24))
-    if (days < 0) return 'Overdue'
-    if (days === 0) return 'Today'
-    if (days === 1) return '1 day'
-    return `${days} days`
-  }
 
   const panGesture = Gesture.Pan()
     .activeOffsetX([-10, 10])
@@ -95,9 +50,6 @@ export function FriendRow({
     .onEnd((e) => {
       if (e.translationX < -DELETE_THRESHOLD) {
         runOnJS(setShowDeleteModal)(true)
-        translateX.value = withSpring(0)
-      } else if (e.translationX > ADD_TO_POT_THRESHOLD) {
-        runOnJS(setShowAddToPotModal)(true)
         translateX.value = withSpring(0)
       } else {
         translateX.value = withSpring(0)
@@ -116,14 +68,6 @@ export function FriendRow({
     }
   })
 
-  const animatedAddIconStyle = useAnimatedStyle(() => {
-    const progress = Math.max(0, Math.min(1, translateX.value / 20))
-    return {
-      opacity: withTiming(progress, { duration: 50 }),
-      transform: [{ scale: withTiming(0.85 + progress * 0.15, { duration: 50 }) }],
-    }
-  })
-
   const animatedDeleteBgStyle = useAnimatedStyle(() => {
     const progress = Math.max(0, Math.min(1, Math.abs(translateX.value) / 80))
     return {
@@ -132,20 +76,10 @@ export function FriendRow({
     }
   })
 
-  const animatedAddBgStyle = useAnimatedStyle(() => {
-    const progress = Math.max(0, Math.min(1, translateX.value / 80))
-    return {
-      opacity: withTiming(Math.min(progress, 1), { duration: 50 }),
-      backgroundColor: '#34C759',
-    }
-  })
-
   const animatedRowBgStyle = useAnimatedStyle(() => {
     let bgColor = palette.surfaceMuted
     if (translateX.value < -5) {
       bgColor = '#FF3B30'
-    } else if (translateX.value > 5) {
-      bgColor = '#34C759'
     }
     return {
       backgroundColor: withTiming(bgColor, { duration: 50 }),
@@ -157,14 +91,6 @@ export function FriendRow({
     onRemove(friend.id, friend.displayName)
   }, [friend.id, friend.displayName, onRemove])
 
-  const handleSelectPot = useCallback(
-    (potId: string) => {
-      setShowAddToPotModal(false)
-      onAddToPot(potId, friend.address)
-    },
-    [friend.address, onAddToPot]
-  )
-
   return (
     <View>
       <View style={styles.swipeContainer}>
@@ -172,14 +98,6 @@ export function FriendRow({
           <Reanimated.View style={[styles.swipeIconWrapper, animatedDeleteIconStyle]}>
             <View style={styles.swipeIconCircle}>
               <MaterialIcons name="delete-outline" size={24} color="#FFFFFF" />
-            </View>
-          </Reanimated.View>
-        </Reanimated.View>
-
-        <Reanimated.View style={[styles.swipeBackground, styles.addBackground, animatedAddBgStyle]}>
-          <Reanimated.View style={[styles.swipeIconWrapper, animatedAddIconStyle]}>
-            <View style={styles.swipeIconCircle}>
-              <MaterialIcons name="person-add-alt" size={24} color="#FFFFFF" />
             </View>
           </Reanimated.View>
         </Reanimated.View>
@@ -232,19 +150,6 @@ export function FriendRow({
         palette={palette}
         onClose={() => setShowDeleteModal(false)}
         onConfirm={handleConfirmDelete}
-      />
-
-      <AddToPotModal
-        visible={showAddToPotModal}
-        friend={friend}
-        availablePots={availablePots}
-        palette={palette}
-        cardStyle={cardStyle}
-        onClose={() => setShowAddToPotModal(false)}
-        onSelectPot={handleSelectPot}
-        getCategoryIcon={getCategoryIcon}
-        getCategoryColor={getCategoryColor}
-        getDaysLeft={getDaysLeft}
       />
     </View>
   )

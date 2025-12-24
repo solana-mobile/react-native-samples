@@ -75,7 +75,8 @@ export default function ActivityScreen() {
   const getActivityMessage = useCallback((activity: Activity) => {
     const friend = activity.friendAddress ? getFriendByAddress(activity.friendAddress) : null;
     const friendName = friend?.displayName || (activity.friendAddress ? displayAddress(activity.friendAddress, friend?.domain, 8) : null);
-    const userName = activity.userName || (activity.userId ? ellipsify(activity.userId, 8) : 'Someone');
+    const userFriend = activity.userId ? getFriendByAddress(activity.userId) : null;
+    const userName = activity.userName || (activity.userId ? displayAddress(activity.userId, userFriend?.domain, 8) : 'Someone');
 
     switch (activity.type) {
       case 'pot_created': return { primary: `${userName} created`, secondary: activity.potName || 'a pot' };

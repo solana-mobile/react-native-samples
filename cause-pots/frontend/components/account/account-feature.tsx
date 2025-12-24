@@ -181,33 +181,21 @@ export function AccountFeature() {
             </LinearGradient>
           </View>
 
-          {/* User Info & Logout Section */}
+          {/* Logout Section */}
           {user && (
-            <GlassCard style={[styles.sectionCard, { backgroundColor: isDark ? colors.surfaceMuted : '#FFFFFF' }]}>
-              <View style={styles.sectionHeader}>
-                <View style={styles.userInfoSection}>
-                  <AppText style={[styles.sectionTitle, { color: colors.text }]}>Profile</AppText>
-                  {user.name && (
-                    <AppText style={[styles.userName, { color: colors.textSecondary }]}>{user.name}</AppText>
-                  )}
-                  <AppText style={[styles.userAddress, { color: colors.textSecondary }]} numberOfLines={1}>
-                    {displayAddress(user.address, user.domain, 16)}
-                  </AppText>
-                </View>
-              </View>
-
+            <View style={styles.logoutSection}>
               <TouchableOpacity
-                style={[styles.logoutButton, { backgroundColor: isDark ? '#FF4444' : '#FF3B30' }]}
+                style={styles.logoutButton}
                 onPress={handleLogout}
                 disabled={loggingOut}
                 activeOpacity={0.7}
               >
-                <MaterialIcons name="logout" size={20} color="#FFFFFF" />
+                <MaterialIcons name="logout" size={18} color="#FFFFFF" />
                 <AppText style={styles.logoutText}>
-                  {loggingOut ? 'Logging out...' : 'Logout & Clear Cache'}
+                  {loggingOut ? 'Logging out...' : 'Logout'}
                 </AppText>
               </TouchableOpacity>
-            </GlassCard>
+            </View>
           )}
         </Animated.ScrollView>
       ) : (
@@ -361,22 +349,6 @@ const styles = StyleSheet.create({
     marginTop: 6,
     color: '#041015',
   },
-  sectionCard: {
-    padding: 18,
-    borderRadius: 20,
-    gap: 12,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 12,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontFamily: 'IBMPlexSans-Bold',
-    letterSpacing: -0.2,
-  },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -411,27 +383,18 @@ const styles = StyleSheet.create({
   connectButton: {
     width: '100%',
   },
-  userInfoSection: {
-    gap: 4,
-  },
-  userName: {
-    fontSize: 14,
-    fontFamily: 'IBMPlexSans-SemiBold',
-    marginTop: 4,
-  },
-  userAddress: {
-    fontSize: 12,
-    fontFamily: 'IBMPlexSans-Regular',
+  logoutSection: {
+    marginTop: 'auto',
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    paddingVertical: 14,
+    paddingVertical: 16,
     paddingHorizontal: 20,
-    borderRadius: 12,
-    marginTop: 8,
+    borderRadius: 24,
+    backgroundColor: '#FF3B30',
   },
   logoutText: {
     fontSize: 14,

@@ -54,7 +54,7 @@ router.get('/', async (req: Request, res: Response) => {
       id: activity.id,
       type: activity.type,
       timestamp: activity.timestamp,
-      userId: activity.user_id,
+      userId: activity.user_address || activity.user_id,
       userName: activity.user_name,
       userAddress: activity.user_address,
       potId: activity.pot_id,

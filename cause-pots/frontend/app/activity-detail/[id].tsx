@@ -170,13 +170,16 @@ export default function ActivityDetailScreen() {
         </View>
 
         {/* User Name (if available) */}
-        {activity.userName && (
+        {(activity.userName || activity.userId) && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: palette.textSecondary }]}>
               Performed By
             </Text>
             <Text style={[styles.sectionContent, { color: palette.text }]}>
-              {activity.userName}
+              {activity.userName || (() => {
+                const userFriend = activity.userId ? getFriendByAddress(activity.userId) : null;
+                return activity.userId ? displayAddress(activity.userId, userFriend?.domain, 8) : 'Someone';
+              })()}
             </Text>
           </View>
         )}

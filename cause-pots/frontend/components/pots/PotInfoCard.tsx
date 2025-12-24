@@ -4,6 +4,7 @@ import { AppText } from '@/components/app-text'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { PotCategory } from '@/store/app-store'
 import { ellipsify } from '@/utils/ellipsify'
+import { displayAddress } from '@/utils/display-address'
 
 interface PotInfoCardProps {
   pot: {
@@ -17,9 +18,10 @@ interface PotInfoCardProps {
   colors: any
   getCategoryIcon: (category: PotCategory) => string
   getCategoryColor: (category: PotCategory) => string
+  getContributorDomain?: (address: string) => string | undefined
 }
 
-export function PotInfoCard({ pot, colors, getCategoryIcon, getCategoryColor }: PotInfoCardProps) {
+export function PotInfoCard({ pot, colors, getCategoryIcon, getCategoryColor, getContributorDomain }: PotInfoCardProps) {
   return (
     <View style={[styles.infoCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
       <View style={styles.infoRow}>
@@ -43,7 +45,7 @@ export function PotInfoCard({ pot, colors, getCategoryIcon, getCategoryColor }: 
         <View style={styles.infoRow}>
           <AppText style={[styles.infoLabel, { color: colors.textSecondary }]}>Released</AppText>
           <AppText style={styles.infoValue}>
-            {pot.releasedAt?.toLocaleDateString()} by {ellipsify(pot.releasedBy || '', 8)}
+            {pot.releasedAt?.toLocaleDateString()} by {displayAddress(pot.releasedBy || '', getContributorDomain?.(pot.releasedBy || ''), 8)}
           </AppText>
         </View>
       )}

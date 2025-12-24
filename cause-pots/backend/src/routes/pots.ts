@@ -16,6 +16,13 @@ async function getPotWithDetails(potId: string): Promise<Pot | null> {
   // Get creator info
   const creator = await db.get<any>('SELECT * FROM users WHERE id = ?', [pot.creator_id])
 
+  // Get released_by user info if pot is released
+  let releasedByAddress = null
+  if (pot.released_by) {
+    const releasedByUser = await db.get<any>('SELECT address FROM users WHERE id = ?', [pot.released_by])
+    releasedByAddress = releasedByUser?.address
+  }
+
   // Get contributors with user info
   const contributorsData = await db.all<any>(
     `SELECT u.* FROM users u
@@ -69,7 +76,7 @@ async function getPotWithDetails(potId: string): Promise<Pot | null> {
     createdAt: pot.created_at,
     isReleased: pot.is_released === 1,
     releasedAt: pot.released_at,
-    releasedBy: pot.released_by,
+    releasedBy: releasedByAddress,
     recipientAddress: pot.recipient_address
   }
 }

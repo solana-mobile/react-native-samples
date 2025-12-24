@@ -383,7 +383,7 @@ export default function PotDetailsScreen() {
           colors={colors}
         />
 
-        <PotInfoCard pot={pot} colors={colors} getCategoryIcon={getCategoryIcon} getCategoryColor={getCategoryColor} />
+        <PotInfoCard pot={pot} colors={colors} getCategoryIcon={getCategoryIcon} getCategoryColor={getCategoryColor} getContributorDomain={getContributorDomain} />
 
         <PotActions
           isContributor={isContributor}

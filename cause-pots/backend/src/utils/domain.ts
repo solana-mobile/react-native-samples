@@ -1,9 +1,12 @@
 import { TldParser } from '@onsol/tldparser'
 import { Connection, PublicKey } from '@solana/web3.js'
 
-// Initialize TLD Parser with mainnet connection
+// Initialize TLD Parser with mainnet connection (no retries to avoid rate limits)
 const SOLANA_RPC_URL = process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com'
-const connection = new Connection(SOLANA_RPC_URL, 'confirmed')
+const connection = new Connection(SOLANA_RPC_URL, {
+  commitment: 'confirmed',
+  disableRetryOnRateLimit: true, // Disable automatic retries
+})
 const parser = new TldParser(connection)
 
 /**
@@ -39,7 +42,7 @@ export async function resolveAddressToDomain(address: string): Promise<string | 
   try {
     const pubkey = new PublicKey(address)
 
-    // Search for .skr domains for this address
+    // Single check - if no result, means no domain (don't retry)
     const domains = await parser.getParsedAllUserDomainsFromTld(pubkey, 'skr')
 
     if (domains && domains.length > 0) {
@@ -50,7 +53,8 @@ export async function resolveAddressToDomain(address: string): Promise<string | 
 
     return null
   } catch (error) {
-    console.error(`Error reverse looking up address ${address}:`, error)
+    // Single attempt only - if it fails, return null (no domain)
+    // Don't retry or log - just accept there's no domain
     return null
   }
 }

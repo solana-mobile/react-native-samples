@@ -30,32 +30,39 @@ router.post('/auth', async (req: Request, res: Response) => {
       const userId = uuidv4()
       const now = new Date().toISOString()
 
-      // Try to resolve .skr domain for this address
-      const domain = await resolveAddressToDomain(address)
-
+      // Create user first without domain (fast)
       await db.run(
         'INSERT INTO users (id, pubkey, address, name, domain, is_profile_complete, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        [userId, pubkey, address, name || null, domain, name ? 1 : 0, now, now]
+        [userId, pubkey, address, name || null, null, name ? 1 : 0, now, now]
       )
 
       user = await db.get<any>('SELECT * FROM users WHERE id = ?', [userId])
       console.log(
-        `✅ Created new user: ${user.name || user.domain || user.address}`
+        `✅ Created new user: ${user.name || user.address}`
       )
+
+      // Resolve domain in background (don't await, with retry handling)
+      setTimeout(() => {
+        resolveAddressToDomain(address).then(domain => {
+          if (domain) {
+            db.run('UPDATE users SET domain = ?, updated_at = ? WHERE id = ?', [
+              domain,
+              new Date().toISOString(),
+              userId,
+            ]).catch(err => console.error('Error updating domain:', err))
+          }
+        }).catch(err => {
+          // Don't log 429 errors to reduce noise
+          if (!err.message?.includes('429')) {
+            console.error('Error resolving domain:', err)
+          }
+        })
+      }, 1000) // Delay to avoid rate limits
     } else {
-      // For existing users, update domain if not already set
-      if (!user.domain) {
-        const domain = await resolveAddressToDomain(address)
-        if (domain) {
-          await db.run('UPDATE users SET domain = ?, updated_at = ? WHERE id = ?', [
-            domain,
-            new Date().toISOString(),
-            user.id,
-          ])
-          user.domain = domain
-        }
-      }
       console.log(`✅ User authenticated: ${user.name || user.domain || user.address}`)
+
+      // Skip domain resolution for existing users to avoid rate limits
+      // Domain will be resolved on first creation only
     }
 
     res.json({

@@ -10,14 +10,16 @@ export interface AuthProviderState {
   user: User | null
   signIn: () => Promise<void>
   signOut: () => Promise<void>
+  updateUserState: (user: User) => Promise<void>
 }
 
 const AuthContext = createContext<AuthProviderState>({} as AuthProviderState)
 
 export function AuthProvider({ children }: PropsWithChildren) {
   const [isLoading, setIsLoading] = useState(false)
+  const [hasAuthenticated, setHasAuthenticated] = useState(false)
   const { account, connect, disconnect } = useMobileWalletAdapter()
-  const { user, authenticate, restoreUser, logout } = useWalletAuth()
+  const { user, authenticate, restoreUser, logout, updateUserState } = useWalletAuth()
   const { clearAll } = useAppStore()
 
   // Disabled: Don't auto-restore user session - always show login page
@@ -29,25 +31,27 @@ export function AuthProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     if (!account && !user) {
       clearAll()
+      setHasAuthenticated(false)
     }
   }, [account, user, clearAll])
 
-  // Authenticate with backend when wallet connects
+  // Authenticate with backend when wallet connects (only once)
   useEffect(() => {
-    if (account?.publicKey) {
+    if (account?.publicKey && !hasAuthenticated && !user) {
       const authenticateUser = async () => {
         try {
           await authenticate({
             pubkey: account.publicKey.toString(),
             address: account.publicKey.toString(),
           })
+          setHasAuthenticated(true)
         } catch (error) {
           console.error('Failed to authenticate user with backend:', error)
         }
       }
       authenticateUser()
     }
-  }, [account, authenticate])
+  }, [account, hasAuthenticated, user, authenticate])
 
   const signIn = useCallback(async () => {
     setIsLoading(true)
@@ -81,6 +85,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         user,
         signIn,
         signOut,
+        updateUserState,
       }}
     >
       {children}
